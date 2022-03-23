@@ -9,11 +9,18 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.sk7software.musicviewer.model.MusicFile;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,10 +31,12 @@ public class NetworkRequest {
     private static RequestQueue queue;
 
     private static final String FILE_LIST_URL = "http://www.sk7software.co.uk/sheetmusic/musiclist.php";
+    private static final String FILE_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/musicupd.php";
     private static final String TAG = NetworkRequest.class.getSimpleName();
 
     public interface NetworkCallback {
-        public void onRequestCompleted(List<String> callbackData);
+        public void onRequestCompleted(List<MusicFile> callbackData);
+
         public void onError(Exception e);
     }
 
@@ -39,9 +48,8 @@ public class NetworkRequest {
     }
 
     public static void fetchFiles(final Context context, final NetworkCallback callback) {
-        Log.d(TAG, "Fetching GPX file list");
+        Log.d(TAG, "Fetching PDF file list");
         try {
-//            uiUpdate.setProgress(true, "Fetching file list");
             JsonArrayRequest jsObjRequest = new JsonArrayRequest
                     (Request.Method.GET, FILE_LIST_URL,
                             null,
@@ -50,10 +58,18 @@ public class NetworkRequest {
                                 public void onResponse(JSONArray response) {
                                     try {
                                         ObjectMapper mapper = new ObjectMapper();
-                                        List<String> files = new ArrayList<>();
-                                        files = mapper.readValue(response.toString(), ArrayList.class);
+                                        List<MusicFile> files = new ArrayList<>();
 
-//                                        uiUpdate.setProgress(false, null);
+                                        for (int i = 0; i < response.length(); i++) {
+                                            try {
+                                                JSONObject o = response.getJSONObject(i);
+                                                MusicFile mf = mapper.readValue(o.toString(), MusicFile.class);
+                                                files.add(mf);
+                                            } catch (JSONException e) {
+                                                Log.e(TAG, "Error getting JSON Object: " + e);
+                                            }
+                                        }
+
                                         callback.onRequestCompleted(files);
                                     } catch (JsonProcessingException e) {
                                         Log.d(TAG, "Error getting dev messages: " + e.getMessage());
@@ -64,7 +80,6 @@ public class NetworkRequest {
                                 @Override
                                 public void onErrorResponse(VolleyError error) {
                                     Log.d(TAG, "Error => " + error.toString());
-//                                    uiUpdate.setProgress(false, null);
                                     callback.onError(error);
                                 }
                             }
@@ -72,7 +87,38 @@ public class NetworkRequest {
             jsObjRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 1, 1));
             getQueue(context).add(jsObjRequest);
         } catch (Exception e) {
-            Log.d(TAG, "Error fetching GPX route: " + e.getMessage());
+            Log.d(TAG, "Error fetching music files: " + e.getMessage());
+        }
+    }
+
+    public static void updateFile(final Context context, final MusicFile file, final NetworkCallback callback) {
+        Log.d(TAG, "Updating file");
+        try {
+            Gson gson = new GsonBuilder()
+                    .create();
+            String json = gson.toJson(file);
+            Log.d(TAG, "JSON: " + json);
+            JSONObject jsonData = new JSONObject(json);
+            JsonObjectRequest jsonRequest = new JsonObjectRequest
+                    (Request.Method.POST, FILE_UPD_URL, jsonData,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    callback.onRequestCompleted(null);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.d(TAG, "Error => " + error.toString());
+                                    callback.onError(error);
+                                }
+                            }
+                    );
+            jsonRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 1, 1));
+            getQueue(context).add(jsonRequest);
+        } catch (Exception e) {
+            Log.d(TAG, "Error updating music file: " + e.getMessage());
         }
     }
 }
