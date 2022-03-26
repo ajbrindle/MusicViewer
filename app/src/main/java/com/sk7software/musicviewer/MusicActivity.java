@@ -53,7 +53,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-public class MusicActivity extends AppCompatActivity {
+public class MusicActivity extends AppCompatActivity implements ITurnablePage {
 
     private SpeechRecognizer recognizer;
     private ImageView img;
@@ -137,9 +137,8 @@ public class MusicActivity extends AppCompatActivity {
         });
 
         img = (ImageView) findViewById(R.id.imgView);
-        pdfHelper = new PdfHelper(img, selectedFile, getScreenSize());
+        pdfHelper = new PdfHelper(img, selectedFile, getScreenSize(), this);
         pdfHelper.showPDF();
-//        showPDF(selectedFile.getName());
 
         if (recognizer != null) {
             recognizer.startListening(createSpeechIntent());
@@ -176,7 +175,10 @@ public class MusicActivity extends AppCompatActivity {
         }
     }
 
-
+    @Override
+    public void afterPageTurn() {
+        // Do nothing
+    }
 
     private void createSpeechRecogniser() {
         if (SpeechRecognizer.isRecognitionAvailable(ApplicationContextProvider.getContext())) {
@@ -274,8 +276,6 @@ public class MusicActivity extends AppCompatActivity {
         long now = new Date().getTime();
         if (now - lastTurn >= MIN_TURN_INTERVAL) {
             lastTurn = now;
-            //pageNo += increment;
-            //showPage();
         }
     }
 }

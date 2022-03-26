@@ -17,7 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
-            android:text="Scroll Delay (ms):  "/>
+            android:text="Scroll Delay: xxxms"/>
         <SeekBar
             android:id="@+id/scrollDelay"
             android:layout_toRightOf="@id/txtLabel1"
@@ -80,7 +80,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
-            android:text="End Delay (ms):  "/>
+            android:layout_weight="1"
+            android:text="End Delay: xxxms"/>
         <SeekBar
             android:id="@+id/endDelay"
             android:layout_toRightOf="@id/txtLabel2"
@@ -88,6 +89,7 @@
             android:layout_height="wrap_content"
             android:max="500"
             android:progress="10"
+            android:layout_weight="1"
             android:text="End of Page Delay"/>
     </RelativeLayout>
 

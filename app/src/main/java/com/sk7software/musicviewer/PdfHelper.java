@@ -1,5 +1,6 @@
 package com.sk7software.musicviewer;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.pdf.PdfRenderer;
@@ -10,6 +11,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import com.sk7software.musicviewer.list.MusicListActivity;
 import com.sk7software.musicviewer.model.MusicFile;
@@ -27,19 +29,26 @@ public class PdfHelper {
     private MusicFile filename;
     private Point dimensions;
     private PdfRenderer renderer;
+    private Bitmap pdfBitmap;
     private int imgTop;
     private int pageNo;
     private boolean start;
     private boolean stopScroll;
+    private ITurnablePage activity;
 
     private static final String REMOTE_FILE_URL = "http://www.sk7software.co.uk/sheetmusic/pdfs/";
     private static String TAG = PdfHelper.class.getSimpleName();
 
-    public PdfHelper(ImageView imageView, MusicFile filename, Point dimensions) {
+    public PdfHelper(ImageView imageView, MusicFile filename, Point dimensions, ITurnablePage activity) {
         this.imageView = imageView;
         this.filename = filename;
         this.dimensions = dimensions;
-        start = true;
+        this.activity = activity;
+        this.start = true;
+    }
+
+    public Bitmap getPdfBitmap() {
+        return pdfBitmap;
     }
 
     public void showPDF() {
@@ -56,13 +65,13 @@ public class PdfHelper {
             imageView.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View view, MotionEvent motionEvent) {
-                    Log.d(TAG, "X: " + motionEvent.getX() + " Screen: " + dimensions.x);
                     if (motionEvent.getX() < dimensions.x / 4) {
                         if (pageNo > 0) pageNo--;
                     } else {
                         pageNo++;
                     }
                     showPage();
+                    activity.afterPageTurn();
                     return false;
                 }
             });
@@ -100,23 +109,20 @@ public class PdfHelper {
         imgTop = 0;
         imageView.setMinimumHeight(dimensions.y);
         imageView.setTop(imgTop);
-        Bitmap mBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
+        pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
         if (pageCount > pageNo) {
             Log.d(TAG, "Showing page: " + pageNo);
             PdfRenderer.Page page = renderer.openPage(pageNo);
-            page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+            page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
             page.close();
 
-            imageView.setImageBitmap(mBitmap);
+            imageView.setImageBitmap(pdfBitmap);
+            RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
+            rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
+            imageView.setLayoutParams(rlp);
         } else {
             // Reverse the increment
             pageNo--;
-        }
-
-        if (start) {
-            pageNo = -1;
-            start = false;
-            imgTop = -dimensions.y/2;
         }
     }
 
@@ -125,6 +131,13 @@ public class PdfHelper {
     }
 
     public void scroll() {
+        // Start first page half way down
+        if (start) {
+            pageNo = -1;
+            start = false;
+            imgTop = -dimensions.y/2;
+        }
+
         Runnable runnable = () -> {
             while (!stopScroll) {
                 try {
