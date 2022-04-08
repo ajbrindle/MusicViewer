@@ -51,8 +51,8 @@ public class MusicChooser extends AppCompatActivity {
         Button btnShow = (Button)findViewById(R.id.showMusicBtn);
 
         HashMap<String,String> musicMap = new HashMap<String,String>();
-        musicMap.put("name", "Selected Music");
-        musicMap.put("value", "Tap to choose");
+        musicMap.put("name", "No Music Selected");
+        musicMap.put("value", "Tap to change");
         musicMapList.add(musicMap);
 
         musicListAdapter = new SimpleAdapter(this, musicMapList, R.layout.list_item,
@@ -104,7 +104,7 @@ public class MusicChooser extends AppCompatActivity {
                     selectedFile = (MusicFile)data.getSerializableExtra("file");
                     Map<String, String> h = new HashMap<String, String>();
                     h = musicMapList.get(0);
-                    h.put("value", selectedFile.getName());
+                    h.put("name", selectedFile.getName());
                     musicListAdapter.notifyDataSetChanged();
                     Log.d(TAG, "Selected file: " + selectedFile.getName());
                 }

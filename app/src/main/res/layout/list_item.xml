@@ -7,11 +7,11 @@
     <TextView
         android:id="@+id/firstLine"
         android:layout_width="fill_parent"
-        android:layout_height="26dip"
+        android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:singleLine="true"
         android:text="Description"
-        android:textSize="16sp" />
+        android:textSize="24sp" />
 
     <TextView
         android:id="@+id/secondLine"
@@ -19,6 +19,6 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:text="Selected Item"
-        android:textSize="12sp" />
+        android:textSize="18sp" />
 
 </LinearLayout>

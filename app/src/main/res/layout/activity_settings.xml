@@ -23,8 +23,9 @@
             android:layout_toRightOf="@id/txtLabel1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="1000"
-            android:progress="50"
+            android:max="2000"
+            android:min="200"
+            android:progress="270"
             android:text="Scroll Delay"/>
     </RelativeLayout>
 
@@ -87,8 +88,9 @@
             android:layout_toRightOf="@id/txtLabel2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="500"
-            android:progress="10"
+            android:max="800"
+            android:min="100"
+            android:progress="140"
             android:layout_weight="1"
             android:text="End of Page Delay"/>
     </RelativeLayout>

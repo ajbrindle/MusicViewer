@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Date;
 
 public class PdfHelper {
 
@@ -139,14 +140,25 @@ public class PdfHelper {
         }
 
         Runnable runnable = () -> {
-            while (!stopScroll) {
-                try {
-                    if (adjustForPageBreak(dimensions.y)) {
-                        Thread.sleep(filename.getEndDelay());
-                    } else {
-                        Thread.sleep(filename.getDelay());
+            long lastScrollTime = 0;
+
+            while (!stopScroll)  {
+                int delay = 0;
+
+                if (adjustForPageBreak(dimensions.y)) {
+                    delay = filename.getEndDelay();
+                } else {
+                    delay = filename.getDelay();
+                }
+
+                while (new Date().getTime() - lastScrollTime < delay) {
+                    try {
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
                     }
-                } catch (InterruptedException e) {}
+                }
+                // Log.d(TAG, "DELAY: " + (new Date().getTime() - lastScrollTime));
+                lastScrollTime = new Date().getTime();
                 imgTop -= 20;
 
                 if (imgTop <= -dimensions.y) {
