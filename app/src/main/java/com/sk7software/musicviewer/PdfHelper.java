@@ -2,7 +2,9 @@ package com.sk7software.musicviewer;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -36,6 +38,9 @@ public class PdfHelper {
     private boolean start;
     private boolean stopScroll;
     private ITurnablePage activity;
+    Bitmap bitmap1;
+    Bitmap bitmap2;
+
 
     private static final String REMOTE_FILE_URL = "http://www.sk7software.co.uk/sheetmusic/pdfs/";
     private static String TAG = PdfHelper.class.getSimpleName();
@@ -46,6 +51,8 @@ public class PdfHelper {
         this.dimensions = dimensions;
         this.activity = activity;
         this.start = true;
+        this.bitmap1 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
+        this.bitmap2 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
     }
 
     public Bitmap getPdfBitmap() {
@@ -71,8 +78,9 @@ public class PdfHelper {
                     } else {
                         pageNo++;
                     }
-                    showPage();
-                    activity.afterPageTurn();
+                    if (showPage()) {
+                        activity.afterPageTurn();
+                    }
                     return false;
                 }
             });
@@ -104,7 +112,7 @@ public class PdfHelper {
         return null;
     }
 
-    private void showPage() {
+    private boolean showPage() {
         // let us just render all pages
         final int pageCount = renderer.getPageCount();
         imgTop = 0;
@@ -121,9 +129,11 @@ public class PdfHelper {
             RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
             rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
             imageView.setLayoutParams(rlp);
+            return true;
         } else {
             // Reverse the increment
             pageNo--;
+            return false;
         }
     }
 
@@ -141,6 +151,8 @@ public class PdfHelper {
 
         Runnable runnable = () -> {
             long lastScrollTime = 0;
+            int currentPage = -99;
+            Bitmap combined = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
 
             while (!stopScroll)  {
                 int delay = 0;
@@ -154,10 +166,10 @@ public class PdfHelper {
                 while (new Date().getTime() - lastScrollTime < delay) {
                     try {
                         Thread.sleep(5);
-                    } catch (InterruptedException e) {
-                    }
+                    } catch (InterruptedException e) {}
                 }
-                // Log.d(TAG, "DELAY: " + (new Date().getTime() - lastScrollTime));
+
+                //Log.d(TAG, "DELAY: " + (new Date().getTime() - lastScrollTime));
                 lastScrollTime = new Date().getTime();
                 imgTop -= 20;
 
@@ -166,30 +178,36 @@ public class PdfHelper {
                     pageNo++;
                 }
 
-                Bitmap mBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
-                Bitmap combined = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
                 int pixels[] = new int[dimensions.x * dimensions.y];
 
-                if (pageNo >= 0) {
-                    PdfRenderer.Page page = renderer.openPage(pageNo);
-                    page.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                    mBitmap.getPixels(pixels, 0, dimensions.x, 0, -imgTop, dimensions.x, dimensions.y + imgTop);
-                    page.close();
-                } else {
-                    // Do nothing
+                if (pageNo != currentPage) {
+                    if (pageNo >= 0) {
+                        PdfRenderer.Page page = renderer.openPage(pageNo);
+                        page.render(bitmap1, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        page.close();
+                    } else {
+                        // Do nothing
+                    }
+
+                    if (pageNo < renderer.getPageCount() - 1) {
+                        PdfRenderer.Page page2 = renderer.openPage(pageNo + 1);
+                        page2.render(bitmap2, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                        page2.close();
+                    } else {
+                        stopScroll = true;
+                    }
                 }
 
-                if (pageNo < renderer.getPageCount() - 1) {
-                    PdfRenderer.Page page2 = renderer.openPage(pageNo + 1);
-                    page2.render(mBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                    mBitmap.getPixels(pixels, ((dimensions.y + imgTop) * dimensions.x), dimensions.x, 0, 0, dimensions.x, -imgTop);
-                    page2.close();
-                } else {
-                    stopScroll = true;
-                }
-
+                bitmap1.getPixels(pixels, 0, dimensions.x, 0, -imgTop, dimensions.x, dimensions.y + imgTop);
+                bitmap2.getPixels(pixels, ((dimensions.y + imgTop) * dimensions.x), dimensions.x, 0, 0, dimensions.x, -imgTop);
                 combined.setPixels(pixels, 0, dimensions.x, 0, 0, dimensions.x, dimensions.y);
                 imageView.setImageBitmap(combined);
+                currentPage = pageNo;
+
+                // Check whether last page is in view
+                if (pageNo == renderer.getPageCount() - 2 && stopReached()) {
+                    stopScroll = true;
+                }
             }
         };
         new Thread(runnable).start();
@@ -228,5 +246,14 @@ public class PdfHelper {
             FileDownloader.downloadFile(fileUrl, pdfFile);
             return null;
         }
+    }
+
+    public boolean isLastPage() {
+        return pageNo == renderer.getPageCount() - 1;
+    }
+
+    private boolean stopReached() {
+        float pctShowing = 1 - ((float)(dimensions.y + imgTop)/(float)dimensions.y);
+        return pctShowing * 100 >= filename.getLastPageStop();
     }
 }

@@ -57,14 +57,10 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
         SeekBar endDelay = (SeekBar) findViewById(R.id.endDelay);
@@ -78,14 +74,10 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
         SeekBar topPct = (SeekBar) findViewById(R.id.topPct);
@@ -98,14 +90,10 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
         SeekBar bottomPct = (SeekBar) findViewById(R.id.bottomPct);
@@ -118,14 +106,26 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
+        SeekBar lastStop = (SeekBar) findViewById(R.id.endStop);
+        lastStop.setProgress(currentFile.getLastPageStop());
+        lastStop.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                currentFile.setLastPageStop(i);
+                overlayBanners();
             }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
+            public void onStartTrackingTouch(SeekBar seekBar) { }
 
-            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
         apply = (Button) findViewById(R.id.btnApply);
@@ -204,6 +204,13 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
         Rect bottomRect = new Rect(0, baseImage.getHeight() - (baseImage.getHeight() * currentFile.getBottomPct() / 100),
                 baseImage.getWidth(), baseImage.getHeight());
         canvas.drawRect(bottomRect, p);
+
+        if (pdfHelper.isLastPage()) {
+            p.setColor(Color.RED);
+            Rect lastPage = new Rect(0, baseImage.getHeight() * currentFile.getLastPageStop() / 100,
+                    baseImage.getWidth(), 3 + (baseImage.getHeight() * currentFile.getLastPageStop() / 100));
+            canvas.drawRect(lastPage, p);
+        }
 
         imgPreview.setImageBitmap(baseImage);
     }

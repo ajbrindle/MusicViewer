@@ -8,6 +8,7 @@ public class MusicFile implements Serializable {
     int endDelay;
     int topPct;
     int bottomPct;
+    int lastPageStop;
 
     public String getName() {
         return name;
@@ -48,4 +49,8 @@ public class MusicFile implements Serializable {
     public void setBottomPct(int bottomPct) {
         this.bottomPct = bottomPct;
     }
+
+    public int getLastPageStop() { return lastPageStop; }
+
+    public void setLastPageStop(int lastPageStop) { this.lastPageStop = lastPageStop; }
 }

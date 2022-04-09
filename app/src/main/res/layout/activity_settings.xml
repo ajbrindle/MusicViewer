@@ -23,8 +23,8 @@
             android:layout_toRightOf="@id/txtLabel1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="2000"
-            android:min="200"
+            android:max="1500"
+            android:min="100"
             android:progress="270"
             android:text="Scroll Delay"/>
     </RelativeLayout>
@@ -32,7 +32,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="25dp">
+        android:layout_marginTop="15dp">
 
         <TextView
             android:id="@+id/txtLabel3"
@@ -89,10 +89,34 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:max="800"
-            android:min="100"
+            android:min="10"
             android:progress="140"
             android:layout_weight="1"
             android:text="End of Page Delay"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp">
+
+        <TextView
+            android:id="@+id/txtLabel5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium"
+            android:layout_weight="1"
+            android:text="Last Page Stop %: "/>
+        <SeekBar
+            android:id="@+id/endStop"
+            android:layout_toRightOf="@id/txtLabel5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:min="0"
+            android:progress="100"
+            android:layout_weight="1"
+            android:text="Last Page Stop %"/>
     </RelativeLayout>
 
     <Button
@@ -100,7 +124,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Apply"
-        android:layout_marginTop="50dp" />
+        android:layout_marginTop="25dp" />
 
     <RelativeLayout
         android:layout_width="match_parent"
