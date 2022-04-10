@@ -16,6 +16,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.sk7software.musicviewer.ApplicationContextProvider;
+import com.sk7software.musicviewer.BuildConfig;
+import com.sk7software.musicviewer.R;
 import com.sk7software.musicviewer.model.MusicFile;
 
 import org.json.JSONArray;
@@ -30,8 +33,8 @@ public class NetworkRequest {
 
     private static RequestQueue queue;
 
-    private static final String FILE_LIST_URL = "http://www.sk7software.co.uk/sheetmusic/musiclist.php";
-    private static final String FILE_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/musicupd.php";
+    private static final String FILE_LIST_URL = "http://www.sk7software.co.uk/sheetmusic/musiclist.php?key=" + BuildConfig.API_KEY;
+    private static final String FILE_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/musicupd.php?key=" + BuildConfig.API_KEY;
     private static final String TAG = NetworkRequest.class.getSimpleName();
 
     public interface NetworkCallback {

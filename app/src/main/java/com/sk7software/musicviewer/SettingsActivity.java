@@ -18,6 +18,7 @@ import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -45,6 +46,7 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
         setContentView(R.layout.activity_settings);
 
         currentFile = (MusicFile) getIntent().getSerializableExtra("file");
+        setTitle("Settings - " + currentFile.getDisplayName());
 
         SeekBar seekDelay = (SeekBar) findViewById(R.id.scrollDelay);
         seekDelay.setProgress(currentFile.getDelay());
@@ -135,7 +137,6 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
                 Intent i = new Intent();
                 i.putExtra("file", currentFile);
                 setResult(Activity.RESULT_OK, i);
-                Log.d(TAG, "Exit settings: " + currentFile.getDelay());
                 NetworkRequest.updateFile(ApplicationContextProvider.getContext(), currentFile, new NetworkRequest.NetworkCallback() {
                     @Override
                     public void onRequestCompleted(List<MusicFile> callbackData) {
@@ -182,8 +183,7 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
         imgPreview.requestLayout();
 
         pdfHelper = new PdfHelper(imgPreview, currentFile, new Point(wid, ht), this);
-        pdfHelper.showPDF();
-        overlayBanners();
+        pdfHelper.showPDF(false);
     }
 
     private void overlayBanners() {
@@ -221,7 +221,27 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                break;
+        }
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        finish();
+    }
+
+    @Override
     public void afterPageTurn() {
+        overlayBanners();
+    }
+
+    @Override
+    public void afterLoad() {
         overlayBanners();
     }
 }

@@ -59,10 +59,23 @@ public class PdfHelper {
         return pdfBitmap;
     }
 
-    public void showPDF() {
-        ParcelFileDescriptor pfd = getPFD(filename.getName());
-        if (pfd == null) return;
-        showPDF(pfd);
+    public void showPDF(boolean inThread) {
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ParcelFileDescriptor pfd = getPFD(filename.getName());
+                if (pfd != null) {
+                    showPDF(pfd);
+                    activity.afterLoad();
+                }
+            }
+        });
+
+        if (inThread) {
+            t.start();
+        } else {
+            t.run();
+        }
     }
 
     private void showPDF(ParcelFileDescriptor file) {
@@ -118,9 +131,9 @@ public class PdfHelper {
         imgTop = 0;
         imageView.setMinimumHeight(dimensions.y);
         imageView.setTop(imgTop);
-        pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
         if (pageCount > pageNo) {
             Log.d(TAG, "Showing page: " + pageNo);
+            pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
             PdfRenderer.Page page = renderer.openPage(pageNo);
             page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
             page.close();
@@ -224,6 +237,7 @@ public class PdfHelper {
             super.onPostExecute(unused);
             try {
                 showPDF(ParcelFileDescriptor.open(new File(MusicListActivity.MUSIC_DIR + "tmp/tmp.pdf"), ParcelFileDescriptor.MODE_READ_ONLY));
+                activity.afterLoad();
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "Unable to open tmp file");
             }

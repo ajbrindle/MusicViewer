@@ -9,6 +9,7 @@ public class MusicFile implements Serializable {
     int topPct;
     int bottomPct;
     int lastPageStop;
+    String displayName;
 
     public String getName() {
         return name;
@@ -53,4 +54,17 @@ public class MusicFile implements Serializable {
     public int getLastPageStop() { return lastPageStop; }
 
     public void setLastPageStop(int lastPageStop) { this.lastPageStop = lastPageStop; }
+
+    public String getDisplayName() {
+        if (name == null) {
+            return null;
+        }
+
+        int extPos = name.lastIndexOf(".");
+        if (extPos > 0) {
+            return name.substring(0, extPos);
+        }
+
+        return name;
+    }
 }

@@ -1,29 +1,13 @@
 package com.sk7software.musicviewer;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Point;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.pdf.PdfRenderer;
-import android.net.NetworkRequest;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.ParcelFileDescriptor;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -31,24 +15,22 @@ import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.sk7software.musicviewer.list.MusicListActivity;
-import com.sk7software.musicviewer.model.MusicFile;
-import com.sk7software.musicviewer.network.FileDownloader;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
+import com.sk7software.musicviewer.model.MusicFile;
+import com.sk7software.musicviewer.network.NetworkRequest;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -60,9 +42,10 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
     private long lastTurn = 0;
     private int scrollMode;
     private TextView txtRate;
-    private MusicFile selectedFile;
+    private MusicFile selectedFile = null;
     private PdfHelper pdfHelper;
-
+    private boolean changed = false;
+    private Dialog progressDialog;
 
     private static final String TAG = MusicActivity.class.getSimpleName();
     private static final long MIN_TURN_INTERVAL = 5000;
@@ -77,8 +60,10 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
                     Log.d(TAG, "Result: " + result.getResultCode());
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         Intent i = result.getData();
-                        selectedFile = (MusicFile) i.getSerializableExtra("file");
-                        txtRate.setText(String.valueOf(selectedFile.getDelay()));
+                        if (i.getSerializableExtra("file") != null) {
+                            selectedFile = (MusicFile) i.getSerializableExtra("file");
+                            txtRate.setText(String.valueOf(selectedFile.getDelay()));
+                        }
                     }
                 }
             });
@@ -90,9 +75,10 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         scrollMode = MODE_PAUSE;
 
-        createSpeechRecogniser();
+        //createSpeechRecogniser();
 
-        selectedFile = (MusicFile)getIntent().getSerializableExtra("file");
+        selectedFile = (MusicFile) getIntent().getSerializableExtra("file");
+        setTitle(selectedFile.getDisplayName());
 
         Button go = (Button)findViewById(R.id.go);
         Button slower = (Button)findViewById(R.id.slower);
@@ -123,6 +109,7 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
                 delay += delay/20;
                 selectedFile.setDelay(delay);
                 txtRate.setText(String.valueOf(selectedFile.getDelay()));
+                changed = true;
             }
         });
 
@@ -133,24 +120,52 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
                 delay -= delay/20;
                 selectedFile.setDelay(delay);
                 txtRate.setText(String.valueOf(selectedFile.getDelay()));
+                changed = true;
             }
         });
 
+        // Show progress dialog
+        AlertDialog.Builder progressDialogBuilder;
+        progressDialogBuilder = new AlertDialog.Builder(MusicActivity.this);
+        progressDialogBuilder.setView(R.layout.progress);
+        progressDialog = progressDialogBuilder
+                .setMessage("Loading " + selectedFile.getName())
+                .create();
+        progressDialog.show();
+
         img = (ImageView) findViewById(R.id.imgView);
         pdfHelper = new PdfHelper(img, selectedFile, getScreenSize(), this);
-        pdfHelper.showPDF();
+        pdfHelper.showPDF(true);
+    }
 
-        if (recognizer != null) {
-            recognizer.startListening(createSpeechIntent());
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        if (changed) {
+            Log.d(TAG, "Updating file settings");
+            NetworkRequest.updateFile(ApplicationContextProvider.getContext(), selectedFile, new NetworkRequest.NetworkCallback() {
+                @Override
+                public void onRequestCompleted(List<MusicFile> callbackData) {
+                    Log.d(TAG, "File updated successfully");
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Error: " + e);
+                }
+            });
+        }
+
         if (recognizer != null) {
             recognizer.destroy();
         }
+
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
@@ -178,6 +193,16 @@ public class MusicActivity extends AppCompatActivity implements ITurnablePage {
     @Override
     public void afterPageTurn() {
         // Do nothing
+    }
+
+    @Override
+    public void afterLoad() {
+        Log.d(TAG, "*** After load");
+        if (recognizer != null) {
+            recognizer.startListening(createSpeechIntent());
+        }
+        progressDialog.dismiss();
+        progressDialog = null;
     }
 
     private void createSpeechRecogniser() {

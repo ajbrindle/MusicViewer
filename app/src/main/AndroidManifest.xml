@@ -23,17 +23,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MusicViewer"
         android:usesCleartextTraffic="true">
+
         <activity
             android:name=".SettingsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".MusicActivity" />
         <activity
             android:name=".MusicActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:parentActivityName=".MusicChooser" />
         <activity
             android:name=".list.MusicListActivity"
             android:exported="false" />
         <activity
             android:name=".MusicChooser"
+            android:title="@string/app_name"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

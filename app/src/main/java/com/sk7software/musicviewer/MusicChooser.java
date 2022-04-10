@@ -80,7 +80,6 @@ public class MusicChooser extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
         Path p = Paths.get(MusicListActivity.MUSIC_DIR + "tmp/tmp.pdf");
         if (Files.exists(p)) {
             try {
