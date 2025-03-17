@@ -79,7 +79,7 @@ public class MusicListActivity extends AppCompatActivity {
             public void onRequestCompleted(List<MusicFile> callbackData) {
                 Log.d(TAG, "File lookup completed:");
                 for (MusicFile f : callbackData) {
-                    Log.d(TAG, f.getName());
+                    Log.d(TAG, f.getId() + " - " + f.getName());
                 }
                 items.clear();
                 items.addAll(callbackData);

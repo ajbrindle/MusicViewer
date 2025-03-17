@@ -1,19 +1,12 @@
 package com.sk7software.musicviewer;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.sk7software.musicviewer.list.MusicListActivity;
 import com.sk7software.musicviewer.model.MusicFile;
@@ -25,10 +18,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.List;
 
 public class PdfHelper {
 
-    private ImageView imageView;
     private MusicFile filename;
     private Point dimensions;
     private PdfRenderer renderer;
@@ -38,34 +31,43 @@ public class PdfHelper {
     private boolean start;
     private boolean stopScroll;
     private ITurnablePage activity;
-    Bitmap bitmap1;
-    Bitmap bitmap2;
-
+    private List<Point> annotationStart;
+    private Bitmap bitmap1;
+    private Bitmap bitmap2;
+    private Bitmap combined;
 
     private static final String REMOTE_FILE_URL = "http://www.sk7software.co.uk/sheetmusic/pdfs/";
     private static String TAG = PdfHelper.class.getSimpleName();
+    private static PdfHelper instance;
 
-    public PdfHelper(ImageView imageView, MusicFile filename, Point dimensions, ITurnablePage activity) {
-        this.imageView = imageView;
+    private PdfHelper() {}
+    public static PdfHelper getInstance() {
+        if (instance == null) {
+            instance = new PdfHelper();
+        }
+        return instance;
+    }
+
+    public void initialise(MusicFile filename, Point dimensions, ITurnablePage activity) {
         this.filename = filename;
         this.dimensions = dimensions;
         this.activity = activity;
-        this.start = true;
         this.bitmap1 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
         this.bitmap2 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
+        this.pdfBitmap = null;
     }
 
     public Bitmap getPdfBitmap() {
         return pdfBitmap;
     }
 
-    public void showPDF(boolean inThread) {
+    public void loadPDF(boolean inThread) {
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
                 ParcelFileDescriptor pfd = getPFD(filename.getName());
                 if (pfd != null) {
-                    showPDF(pfd);
+                    fetchPDF(pfd);
                     activity.afterLoad();
                 }
             }
@@ -78,32 +80,16 @@ public class PdfHelper {
         }
     }
 
-    private void showPDF(ParcelFileDescriptor file) {
+    private void fetchPDF(ParcelFileDescriptor file) {
         try {
             renderer = new PdfRenderer(file);
             pageNo = 0;
-
-            imageView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    if (motionEvent.getX() < dimensions.x / 4) {
-                        if (pageNo > 0) pageNo--;
-                    } else {
-                        pageNo++;
-                    }
-                    if (showPage()) {
-                        activity.afterPageTurn();
-                    }
-                    return false;
-                }
-            });
-
-            showPage();
         } catch (IOException e) {
             Log.e(TAG, "I/O Error: " + e.getMessage());
         }
 
     }
+
 
     private ParcelFileDescriptor getPFD(String filename) {
         try {
@@ -125,12 +111,26 @@ public class PdfHelper {
         return null;
     }
 
+    public Bitmap getPdfBitmap(int pageNo) {
+        final int pageCount = renderer.getPageCount();
+        imgTop = 0;
+        if (pageCount > pageNo) {
+            Log.d(TAG, "Showing page: " + pageNo);
+            pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
+            PdfRenderer.Page page = renderer.openPage(pageNo);
+            page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+            page.close();
+            return pdfBitmap;
+        }
+        return null;
+    }
+
     private boolean showPage() {
         // let us just render all pages
         final int pageCount = renderer.getPageCount();
         imgTop = 0;
-        imageView.setMinimumHeight(dimensions.y);
-        imageView.setTop(imgTop);
+//        imageView.setMinimumHeight(dimensions.y);
+//        imageView.setTop(imgTop);
         if (pageCount > pageNo) {
             Log.d(TAG, "Showing page: " + pageNo);
             pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
@@ -138,10 +138,10 @@ public class PdfHelper {
             page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
             page.close();
 
-            imageView.setImageBitmap(pdfBitmap);
-            RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
-            rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
-            imageView.setLayoutParams(rlp);
+//            imageView.setImageBitmap(pdfBitmap);
+//            RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
+//            rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
+//            imageView.setLayoutParams(rlp);
             return true;
         } else {
             // Reverse the increment
@@ -165,7 +165,7 @@ public class PdfHelper {
         Runnable runnable = () -> {
             long lastScrollTime = 0;
             int currentPage = -99;
-            Bitmap combined = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
+            combined = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
 
             while (!stopScroll)  {
                 int delay = 0;
@@ -182,7 +182,6 @@ public class PdfHelper {
                     } catch (InterruptedException e) {}
                 }
 
-                //Log.d(TAG, "DELAY: " + (new Date().getTime() - lastScrollTime));
                 lastScrollTime = new Date().getTime();
                 imgTop -= 20;
 
@@ -214,7 +213,7 @@ public class PdfHelper {
                 bitmap1.getPixels(pixels, 0, dimensions.x, 0, -imgTop, dimensions.x, dimensions.y + imgTop);
                 bitmap2.getPixels(pixels, ((dimensions.y + imgTop) * dimensions.x), dimensions.x, 0, 0, dimensions.x, -imgTop);
                 combined.setPixels(pixels, 0, dimensions.x, 0, 0, dimensions.x, dimensions.y);
-                imageView.setImageBitmap(combined);
+//                imageView.setImageBitmap(combined);
                 currentPage = pageNo;
 
                 // Check whether last page is in view
@@ -236,7 +235,7 @@ public class PdfHelper {
         protected void onPostExecute(Void unused) {
             super.onPostExecute(unused);
             try {
-                showPDF(ParcelFileDescriptor.open(new File(MusicListActivity.MUSIC_DIR + "tmp/tmp.pdf"), ParcelFileDescriptor.MODE_READ_ONLY));
+                fetchPDF(ParcelFileDescriptor.open(new File(MusicListActivity.MUSIC_DIR + "tmp/tmp.pdf"), ParcelFileDescriptor.MODE_READ_ONLY));
                 activity.afterLoad();
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "Unable to open tmp file");
@@ -260,6 +259,10 @@ public class PdfHelper {
             FileDownloader.downloadFile(fileUrl, pdfFile);
             return null;
         }
+    }
+
+    public Bitmap getCombinedBitmap() {
+        return combined;
     }
 
     public boolean isLastPage() {

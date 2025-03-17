@@ -7,4 +7,25 @@
         android:icon="@drawable/ic_gear_solid"
         app:showAsAction="ifRoom"
         android:title="Settings"/>
+    <item
+        android:id="@+id/action_annotate"
+        android:orderInCategory="100"
+        android:icon="@drawable/edit_solid"
+        app:showAsAction="ifRoom"
+        android:title="Annotate">
+        <menu>
+            <item
+                android:id="@+id/action_annotate_freehand"
+                android:title="Freehand"/>
+            <item
+                android:id="@+id/action_annotate_text"
+                android:title="Text"/>
+            <item
+                android:id="@+id/action_annotate_fingers"
+                android:title="Fingers"/>
+            <item
+                android:id="@+id/action_annotate_edit"
+                android:title="Edit"/>
+        </menu>
+    </item>
 </menu>

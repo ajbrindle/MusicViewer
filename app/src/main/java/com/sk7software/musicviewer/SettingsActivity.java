@@ -9,16 +9,13 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
-import android.graphics.PointF;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -182,8 +179,8 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
         imgPreview.setLeft((size.x - wid) / 2);
         imgPreview.requestLayout();
 
-        pdfHelper = new PdfHelper(imgPreview, currentFile, new Point(wid, ht), this);
-        pdfHelper.showPDF(false);
+        PdfHelper.getInstance().initialise(currentFile, new Point(wid, ht), this);
+        pdfHelper.loadPDF(false);
     }
 
     private void overlayBanners() {
@@ -244,4 +241,10 @@ public class SettingsActivity extends AppCompatActivity implements ITurnablePage
     public void afterLoad() {
         overlayBanners();
     }
+
+    @Override
+    public boolean isAnnotating() { return false; }
+
+    @Override
+    public void handleAnnotation(MotionEvent motionEvent) {}
 }

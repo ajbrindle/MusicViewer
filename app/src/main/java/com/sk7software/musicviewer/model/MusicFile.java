@@ -1,8 +1,11 @@
 package com.sk7software.musicviewer.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MusicFile implements Serializable {
+    int id;
     String name;
     int delay;
     int endDelay;
@@ -10,6 +13,7 @@ public class MusicFile implements Serializable {
     int bottomPct;
     int lastPageStop;
     String displayName;
+    List<MusicAnnotation> annotations;
 
     public String getName() {
         return name;
@@ -55,6 +59,26 @@ public class MusicFile implements Serializable {
 
     public void setLastPageStop(int lastPageStop) { this.lastPageStop = lastPageStop; }
 
+    public void addAnnotation(MusicAnnotation annotation) {
+        if (annotations == null) {
+            annotations = new ArrayList<MusicAnnotation>();
+        }
+        annotation.setId(annotations.stream().mapToInt(MusicAnnotation::getId).max().orElse(0) + 1);
+        annotations.add(annotation);
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public List<MusicAnnotation> getAnnotations() {
+        return annotations;
+    }
+
     public String getDisplayName() {
         if (name == null) {
             return null;
@@ -66,5 +90,18 @@ public class MusicFile implements Serializable {
         }
 
         return name;
+    }
+
+    public MusicAnnotation findAnnotation(float x, float y) {
+        for (MusicAnnotation annotation : annotations) {
+            if (annotation.contains(x, y)) {
+                return annotation;
+            }
+        }
+        return null;
+    }
+
+    public void removeAnnotation(int id) {
+        annotations.removeIf(a -> a.getId() == id);
     }
 }
