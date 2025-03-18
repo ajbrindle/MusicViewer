@@ -59,12 +59,14 @@ public class MusicFile implements Serializable {
 
     public void setLastPageStop(int lastPageStop) { this.lastPageStop = lastPageStop; }
 
-    public void addAnnotation(MusicAnnotation annotation) {
+    public int addAnnotation(MusicAnnotation annotation) {
         if (annotations == null) {
             annotations = new ArrayList<MusicAnnotation>();
         }
-        annotation.setId(annotations.stream().mapToInt(MusicAnnotation::getId).max().orElse(0) + 1);
+        int id = annotations.stream().mapToInt(MusicAnnotation::getId).max().orElse(0) + 1;
+        annotation.setId(id);
         annotations.add(annotation);
+        return id;
     }
 
     public void setId(int id) {

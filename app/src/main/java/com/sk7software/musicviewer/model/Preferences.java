@@ -10,6 +10,8 @@ public class Preferences {
     public static final String LINE_WIDTH = "PREF_LINE_WIDTH";
     public static final String LINE_TRANSPARENCY = "PREF_LINE_TRANSPARENCY";
     public static final String LINE_COLOUR = "PREF_LINE_COLOR";
+    public static final String TEXT_SIZE = "PREF_TEXT_SIZE";
+
     private static Preferences instance;
     private final SharedPreferences prefs;
 

@@ -1,6 +1,8 @@
 package com.sk7software.musicviewer;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
@@ -9,6 +11,7 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
 import com.sk7software.musicviewer.list.MusicListActivity;
+import com.sk7software.musicviewer.model.MusicAnnotation;
 import com.sk7software.musicviewer.model.MusicFile;
 import com.sk7software.musicviewer.network.FileDownloader;
 
@@ -18,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.List;
 
 public class PdfHelper {
 
@@ -30,17 +32,18 @@ public class PdfHelper {
     private int pageNo;
     private boolean start;
     private boolean stopScroll;
-    private ITurnablePage activity;
-    private List<Point> annotationStart;
+    private IUpdateable activity;
     private Bitmap bitmap1;
     private Bitmap bitmap2;
     private Bitmap combined;
+    private boolean scrolling;
 
     private static final String REMOTE_FILE_URL = "http://www.sk7software.co.uk/sheetmusic/pdfs/";
     private static String TAG = PdfHelper.class.getSimpleName();
     private static PdfHelper instance;
 
     private PdfHelper() {}
+
     public static PdfHelper getInstance() {
         if (instance == null) {
             instance = new PdfHelper();
@@ -48,13 +51,16 @@ public class PdfHelper {
         return instance;
     }
 
-    public void initialise(MusicFile filename, Point dimensions, ITurnablePage activity) {
+    public void initialise(MusicFile filename, Point dimensions, IUpdateable activity) {
         this.filename = filename;
         this.dimensions = dimensions;
         this.activity = activity;
+        this.start = true;
         this.bitmap1 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
         this.bitmap2 = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
         this.pdfBitmap = null;
+        this.combined = null;
+        this.scrolling = false;
     }
 
     public Bitmap getPdfBitmap() {
@@ -116,8 +122,11 @@ public class PdfHelper {
         imgTop = 0;
         if (pageCount > pageNo) {
             Log.d(TAG, "Showing page: " + pageNo);
-            pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
             PdfRenderer.Page page = renderer.openPage(pageNo);
+            // assume page is portrait
+            float scaleY = (float)dimensions.y / (float)page.getHeight();
+            int bitmapWidthX = (int) ((float)page.getWidth() * scaleY);
+            pdfBitmap = Bitmap.createBitmap(bitmapWidthX, dimensions.y, Bitmap.Config.ARGB_4444);
             page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
             page.close();
             return pdfBitmap;
@@ -125,30 +134,6 @@ public class PdfHelper {
         return null;
     }
 
-    private boolean showPage() {
-        // let us just render all pages
-        final int pageCount = renderer.getPageCount();
-        imgTop = 0;
-//        imageView.setMinimumHeight(dimensions.y);
-//        imageView.setTop(imgTop);
-        if (pageCount > pageNo) {
-            Log.d(TAG, "Showing page: " + pageNo);
-            pdfBitmap = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
-            PdfRenderer.Page page = renderer.openPage(pageNo);
-            page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-            page.close();
-
-//            imageView.setImageBitmap(pdfBitmap);
-//            RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT);
-//            rlp.addRule(RelativeLayout.CENTER_IN_PARENT);
-//            imageView.setLayoutParams(rlp);
-            return true;
-        } else {
-            // Reverse the increment
-            pageNo--;
-            return false;
-        }
-    }
 
     public void setStopScroll(boolean stopScroll) {
         this.stopScroll = stopScroll;
@@ -165,6 +150,7 @@ public class PdfHelper {
         Runnable runnable = () -> {
             long lastScrollTime = 0;
             int currentPage = -99;
+            boolean clear = true;
             combined = Bitmap.createBitmap(dimensions.x, dimensions.y, Bitmap.Config.ARGB_4444);
 
             while (!stopScroll)  {
@@ -197,14 +183,14 @@ public class PdfHelper {
                         PdfRenderer.Page page = renderer.openPage(pageNo);
                         page.render(bitmap1, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                         page.close();
-                    } else {
-                        // Do nothing
+                        addAnnotations(bitmap1, pageNo);
                     }
 
                     if (pageNo < renderer.getPageCount() - 1) {
                         PdfRenderer.Page page2 = renderer.openPage(pageNo + 1);
                         page2.render(bitmap2, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                         page2.close();
+                        addAnnotations(bitmap2, pageNo+1);
                     } else {
                         stopScroll = true;
                     }
@@ -213,8 +199,9 @@ public class PdfHelper {
                 bitmap1.getPixels(pixels, 0, dimensions.x, 0, -imgTop, dimensions.x, dimensions.y + imgTop);
                 bitmap2.getPixels(pixels, ((dimensions.y + imgTop) * dimensions.x), dimensions.x, 0, 0, dimensions.x, -imgTop);
                 combined.setPixels(pixels, 0, dimensions.x, 0, 0, dimensions.x, dimensions.y);
-//                imageView.setImageBitmap(combined);
                 currentPage = pageNo;
+                activity.update(clear);
+                clear = false;
 
                 // Check whether last page is in view
                 if (pageNo == renderer.getPageCount() - 2 && stopReached()) {
@@ -265,12 +252,56 @@ public class PdfHelper {
         return combined;
     }
 
-    public boolean isLastPage() {
-        return pageNo == renderer.getPageCount() - 1;
+    public boolean isLastPage(int num) {
+        return num == renderer.getPageCount() - 1;
     }
 
     private boolean stopReached() {
         float pctShowing = 1 - ((float)(dimensions.y + imgTop)/(float)dimensions.y);
         return pctShowing * 100 >= filename.getLastPageStop();
+    }
+
+    private void addAnnotations(Bitmap bitmap, int pageNo) {
+        if (filename.getAnnotations() == null || filename.getAnnotations().isEmpty()) {
+            return;
+        }
+
+        Canvas canvas = new Canvas(bitmap);
+
+        for (MusicAnnotation annotation : filename.getAnnotations()) {
+            if (annotation.getPage() != pageNo) {
+                continue;
+            }
+
+            boolean first = true;
+            Point lastPoint = new Point();
+
+            Paint p = new Paint();
+            p.setColor(annotation.getColour());
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(annotation.getLineWidth());
+            p.setAlpha(annotation.getTransparency());
+
+            for (Point pt : annotation.getPoints()) {
+                if (!first) {
+                    canvas.drawLine(lastPoint.x, lastPoint.y, pt.x, pt.y, p);
+                }
+                lastPoint.x = pt.x;
+                lastPoint.y = pt.y;
+                first = false;
+            }
+        }
+    }
+
+    public void setScrolling(boolean scrolling) {
+        this.scrolling = scrolling;
+    }
+
+    public boolean isScrolling() {
+        return scrolling;
+    }
+
+    public Bitmap getDisplayBitmap() {
+        return scrolling ? combined : pdfBitmap;
     }
 }

@@ -25,18 +25,12 @@ public class MusicAnnotation implements Serializable {
     private int colour;
     private int transparency;
     private String text;
+    private int textSize;
     private List<Integer> fingers;
     private int hand;
 
     public MusicAnnotation() {
         super();
-    }
-
-    public MusicAnnotation(Paint paint) {
-        this.type = FREEHAND;
-        this.lineWidth = (int)paint.getStrokeWidth();
-        this.colour = paint.getColor();
-        this.transparency = paint.getAlpha();
     }
 
     public int getId() {
@@ -130,31 +124,47 @@ public class MusicAnnotation implements Serializable {
         this.boundingRect = boundingRect;
     }
 
+    public int getTextSize() {
+        return textSize;
+    }
+
+    public void setTextSize(int textSize) {
+        this.textSize = textSize;
+    }
+
     public void calcBoundingRect() {
         boundingRect = new Rect();
 
-        /* set bounds of rectangle based on points */
         if (points != null) {
             int x0 = points.get(0).x;
             int y0 = points.get(0).y;
             int x1 = points.get(0).x;
             int y1 = points.get(0).y;
 
-            for (Point p : points) {
-                if (p.x < x0) {
-                    x0 = p.x;
+            if (type == FREEHAND) {
+                for (Point p : points) {
+                    if (p.x < x0) {
+                        x0 = p.x;
+                    }
+                    if (p.x > x1) {
+                        x1 = p.x;
+                    }
+                    if (p.y < y0) {
+                        y0 = p.y;
+                    }
+                    if (p.y > y1) {
+                        y1 = p.y;
+                    }
                 }
-                if (p.x > x1) {
-                    x1 = p.x;
-                }
-                if (p.y < y0) {
-                    y0 = p.y;
-                }
-                if (p.y > y1) {
-                    y1 = p.y;
-                }
+                boundingRect.set(x0, y0, x1, y1);
+            } else if (type == TEXT) {
+                Paint p = new Paint();
+                Rect textBounds = new Rect();
+                p.setTextSize(textSize);
+                p.getTextBounds(text, 0, text.length(), textBounds);
+                boundingRect.set(points.get(0).x - (textSize*2), points.get(0).y - textBounds.height(),
+                        points.get(0).x + textBounds.width() + (textSize*2), points.get(0).y + textBounds.height());
             }
-            boundingRect.set(x0, y0, x1, y1);
         }
     }
 
