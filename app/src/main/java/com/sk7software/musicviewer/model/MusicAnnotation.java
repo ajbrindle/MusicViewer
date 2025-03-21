@@ -239,8 +239,7 @@ public class MusicAnnotation implements Serializable {
             }
             annotation.setPercentagePoints(x, y);
         } catch (JSONException e) {
-            System.out.println("Error parsing JSON: " + e);
-//            Log.e(TAG, "Error parsing JSON: " + e);
+            Log.e(TAG, "Error parsing JSON: " + e);
         }
         return annotation;
     }

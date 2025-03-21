@@ -8,20 +8,20 @@ import com.sk7software.musicviewer.model.MusicAnnotation;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({Log.class})
 public class MusicAnnotationTest {
-    @Mock
-    private Log log;
+
     @Test
     public void testFromJson() throws JSONException {
-        Mockito.mock(Log.class, Mockito.RETURNS_DEEP_STUBS);
-
+        PowerMockito.mockStatic(Log.class);
         JSONArray jsonArray = new JSONArray(JSON);
         for (int i=0; i< jsonArray.length(); i++) {
             MusicAnnotation annotation = MusicAnnotation.fromJson(jsonArray.getJSONObject(i));

@@ -102,7 +102,6 @@ public class NetworkRequest {
             Gson gson = new GsonBuilder()
                     .create();
             String json = gson.toJson(file);
-            Log.d(TAG, "JSON: " + json);
             JSONObject jsonData = new JSONObject(json);
             JsonObjectRequest jsonRequest = new JsonObjectRequest
                     (Request.Method.POST, FILE_UPD_URL, jsonData,
