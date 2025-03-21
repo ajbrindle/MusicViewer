@@ -11,6 +11,7 @@ import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
 import com.sk7software.musicviewer.list.MusicListActivity;
+import com.sk7software.musicviewer.model.DisplayPoint;
 import com.sk7software.musicviewer.model.MusicAnnotation;
 import com.sk7software.musicviewer.model.MusicFile;
 import com.sk7software.musicviewer.network.FileDownloader;
@@ -185,7 +186,6 @@ public class PdfHelper {
                         page.close();
                         addAnnotations(bitmap1, pageNo);
                     }
-
                     if (pageNo < renderer.getPageCount() - 1) {
                         PdfRenderer.Page page2 = renderer.openPage(pageNo + 1);
                         page2.render(bitmap2, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
@@ -273,23 +273,57 @@ public class PdfHelper {
                 continue;
             }
 
-            boolean first = true;
-            Point lastPoint = new Point();
+            annotation.convertPoints(bitmap.getWidth(), bitmap.getHeight());
 
-            Paint p = new Paint();
-            p.setColor(annotation.getColour());
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeWidth(annotation.getLineWidth());
-            p.setAlpha(annotation.getTransparency());
-
-            for (Point pt : annotation.getPoints()) {
-                if (!first) {
-                    canvas.drawLine(lastPoint.x, lastPoint.y, pt.x, pt.y, p);
-                }
-                lastPoint.x = pt.x;
-                lastPoint.y = pt.y;
-                first = false;
+            if (annotation.getType() == MusicAnnotation.FREEHAND) {
+                drawFreehand(canvas, annotation);
+            } else if (annotation.getType() == MusicAnnotation.TEXT) {
+                drawText(canvas, annotation);
+            } else if (annotation.getType() == MusicAnnotation.FINGERING) {
+                drawFingering(canvas, annotation);
             }
+        }
+    }
+
+    private void drawFreehand(Canvas canvas, MusicAnnotation annotation) {
+        boolean first = true;
+        Point lastPoint = new Point();
+
+        Paint p = new Paint();
+        p.setColor(annotation.getColour());
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(annotation.getLineWidth());
+        p.setAlpha(annotation.getTransparency());
+
+        for (DisplayPoint pt : annotation.getPoints()) {
+            if (!first) {
+                canvas.drawLine(lastPoint.x, lastPoint.y, pt.x, pt.y, p);
+            }
+            lastPoint.x = pt.x;
+            lastPoint.y = pt.y;
+            first = false;
+        }
+    }
+
+    private void drawText(Canvas canvas, MusicAnnotation annotation) {
+        Paint p = new Paint();
+        p.setColor(annotation.getColour());
+        p.setTextSize(annotation.getTextSize());
+        p.setStyle(Paint.Style.FILL_AND_STROKE);
+        p.setAlpha(annotation.getTransparency());
+        canvas.drawText(annotation.getText(), annotation.getPoints().get(0).x, annotation.getPoints().get(0).y, p);
+    }
+
+    private void drawFingering(Canvas canvas, MusicAnnotation annotation) {
+        Paint p = new Paint();
+        p.setColor(annotation.getColour());
+        p.setTextSize(annotation.getTextSize());
+        p.setStyle(Paint.Style.FILL_AND_STROKE);
+        p.setAlpha(annotation.getTransparency());
+        int y = annotation.getPoints().get(0).y;
+        for (String finger : annotation.getText().split(",")) {
+            canvas.drawText(finger, annotation.getPoints().get(0).x, y, p);
+            y += annotation.getTextSize();
         }
     }
 

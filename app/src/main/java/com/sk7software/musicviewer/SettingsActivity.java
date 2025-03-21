@@ -127,10 +127,9 @@ public class SettingsActivity extends AppCompatActivity implements IUpdateable {
                 setResult(Activity.RESULT_OK, i);
                 NetworkRequest.updateFile(ApplicationContextProvider.getContext(), currentFile, new NetworkRequest.NetworkCallback() {
                     @Override
-                    public void onRequestCompleted(List<MusicFile> callbackData) {
-                        Log.d(TAG, "File updated successfully");
+                    public void onRequestCompleted(Object callbackData) {
+                        Log.d(TAG, "Music document updated successfully");
                     }
-
                     @Override
                     public void onError(Exception e) {
                         Log.e(TAG, "Error: " + e);

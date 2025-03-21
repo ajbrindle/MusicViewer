@@ -76,13 +76,13 @@ public class MusicListActivity extends AppCompatActivity {
     private void getMusicPDFs() {
         NetworkRequest.fetchFiles(getApplicationContext(),new NetworkRequest.NetworkCallback() {
             @Override
-            public void onRequestCompleted(List<MusicFile> callbackData) {
+            public void onRequestCompleted(Object callbackData) {
                 Log.d(TAG, "File lookup completed:");
-                for (MusicFile f : callbackData) {
+                for (MusicFile f : (List<MusicFile>)callbackData) {
                     Log.d(TAG, f.getId() + " - " + f.getName());
                 }
                 items.clear();
-                items.addAll(callbackData);
+                items.addAll((List<MusicFile>)callbackData);
                 items.addAll(addLocalFiles());
 
                 for (MusicFile f : items) {

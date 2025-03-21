@@ -34,6 +34,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.sk7software.musicviewer.model.DisplayPoint;
 import com.sk7software.musicviewer.model.MusicAnnotation;
 import com.sk7software.musicviewer.model.MusicFile;
 import com.sk7software.musicviewer.model.Preferences;
@@ -172,6 +173,21 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 Log.d(TAG, "Layout listener");
                 // Ensure you call it only once :
                 rootView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                NetworkRequest.fetchAnnotations(MusicActivity.this, selectedFile.getId(), new NetworkRequest.NetworkCallback() {
+                    @Override
+                    public void onRequestCompleted(Object callbackData) {
+                        List<MusicAnnotation> annotations = (List<MusicAnnotation>)callbackData;
+                        for (MusicAnnotation a : annotations) {
+                            selectedFile.addAnnotation(a);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        Log.e(TAG, "Error: " + e);
+                    }
+                });
                 Point dimensions = new Point(musicView.getWidth(), musicView.getHeight());
                 musicView.setMinimumHeight(dimensions.y);
                 PdfHelper.getInstance().initialise(selectedFile, dimensions, MusicActivity.this);
@@ -189,8 +205,8 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
             Log.d(TAG, "Updating file settings");
             NetworkRequest.updateFile(ApplicationContextProvider.getContext(), selectedFile, new NetworkRequest.NetworkCallback() {
                 @Override
-                public void onRequestCompleted(List<MusicFile> callbackData) {
-                    Log.d(TAG, "File updated successfully");
+                public void onRequestCompleted(Object callbackData) {
+                    Log.d(TAG, "Music document updated successfully");
                 }
 
                 @Override
@@ -234,6 +250,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 btnMenu.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FREEHAND);
                 toggleEditColour(item, 0xFFFF0000);
+                changed = true;
                 return true;
             case R.id.action_annotate_text:
                 btnMenu.setVisibility(View.VISIBLE);
@@ -246,11 +263,14 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 btnMenu.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FINGERS);
                 toggleEditColour(item, 0xFFFF0000);
+                FingersDialog fdd = new FingersDialog(this);
+                fdd.show();
                 return true;
             case R.id.action_annotate_edit:
                 btnMenu.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_EDIT);
                 toggleEditColour(item, 0xFFFF0000);
+                changed = true;
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -274,6 +294,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
         if (PdfHelper.getInstance().getPdfBitmap() == null) {
             PdfHelper.getInstance().getPdfBitmap(0);
             musicView.setPageNo(0);
+            musicView.updateAnnotations();
         }
         if (progressDialog != null) {
             progressDialog.dismiss();
@@ -505,12 +526,14 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
 
     @Override
     public void storeAnnotation(MusicAnnotation annotation) {
-        annotation.setPoints(Arrays.asList(new Point(musicView.getWidth()/2,musicView.getHeight()/2)));
+        annotation.addPoint(new Point(musicView.getWidth()/2,musicView.getHeight()/2),
+                PdfHelper.getInstance().getPdfBitmap().getWidth(), PdfHelper.getInstance().getPdfBitmap().getHeight());
         annotation.setPage(musicView.getPageNo());
         annotation.calcBoundingRect();
         int annotationId = selectedFile.addAnnotation(annotation);
         musicView.setSelectedAnnotationId(annotationId);
         musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_EDIT);
         musicView.invalidate();
+        changed = true;
     }
 }

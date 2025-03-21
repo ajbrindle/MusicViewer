@@ -8,7 +8,6 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -16,13 +15,10 @@ import android.widget.RelativeLayout;
 
 import androidx.annotation.Nullable;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.sk7software.musicviewer.model.DisplayPoint;
 import com.sk7software.musicviewer.model.MusicAnnotation;
 import com.sk7software.musicviewer.model.MusicFile;
 import com.sk7software.musicviewer.model.Preferences;
-
-import java.util.ArrayList;
 
 public class MusicView extends View {
 
@@ -106,13 +102,12 @@ public class MusicView extends View {
                 drawTextAnnotation(canvas, annotation);
                 break;
             case MusicAnnotation.FINGERING:
-                //drawFingersAnnotation(canvas, annotation);
+                drawFingersAnnotation(canvas, annotation);
         }
     }
     private void drawFreehandAnnotation(Canvas canvas, MusicAnnotation annotation) {
         boolean first = true;
         Point lastPoint = new Point();
-        Log.d(TAG, "Draw freehand annotation");
 
         Paint p = new Paint();
         p.setColor(annotation.getColour());
@@ -120,7 +115,7 @@ public class MusicView extends View {
         p.setStrokeWidth(annotation.getLineWidth());
         p.setAlpha(annotation.getTransparency());
 
-        for (Point pt : annotation.getPoints()) {
+        for (DisplayPoint pt : annotation.getPoints()) {
             if (!first) {
                 canvas.drawLine(lastPoint.x, lastPoint.y, pt.x, pt.y, p);
             }
@@ -138,6 +133,29 @@ public class MusicView extends View {
         p.setTextSize(annotation.getTextSize());
         p.setAlpha(annotation.getTransparency());
         canvas.drawText(annotation.getText(), annotation.getPoints().get(0).x, annotation.getPoints().get(0).y, p);
+        showSelectedAnnotation(canvas, annotation);
+    }
+
+    private void drawFingersAnnotation(Canvas canvas, MusicAnnotation annotation) {
+        Paint p = new Paint();
+        p.setColor(annotation.getColour());
+        p.setStyle(Paint.Style.FILL_AND_STROKE);
+        p.setTextSize(annotation.getTextSize());
+        p.setAlpha(annotation.getTransparency());
+        String[] fingers = annotation.getText().split(",");
+        int iStart = 0;
+        int iEnd = fingers.length;
+        int incr = 1;
+        if (annotation.getHand() == MusicAnnotation.RIGHT_HAND) {
+            iStart = fingers.length - 1;
+            iEnd = -1;
+            incr = -1;
+        }
+        int y = annotation.getPoints().get(0).y;
+        for (int i=iStart; i!=iEnd; i+=incr) {
+            canvas.drawText(fingers[i], annotation.getPoints().get(0).x, y, p);
+            y += (int)p.getTextSize();
+        }
         showSelectedAnnotation(canvas, annotation);
     }
 
@@ -189,19 +207,9 @@ public class MusicView extends View {
         musicFile.addAnnotation(currentAnnotation);
     }
 
-    public void resetAnnotationPoints() {
-        if (currentAnnotation == null || currentAnnotation.getPoints() == null) {
-            return;
-        }
-        currentAnnotation.getPoints().clear();
-    }
-
     public void addAnnotationPoint(Point point) {
-        if (currentAnnotation.getPoints() == null) {
-            currentAnnotation.setPoints(new ArrayList<>());
-
-        }
-        currentAnnotation.getPoints().add(point);
+        currentAnnotation.addPoint(point,
+                PdfHelper.getInstance().getPdfBitmap().getWidth(), PdfHelper.getInstance().getPdfBitmap().getHeight());
     }
 
     public void setPaintColour(int colour) {
@@ -244,7 +252,8 @@ public class MusicView extends View {
 
     public void moveAnnotation(int dx, int dy) {
         if (currentAnnotation != null) {
-            currentAnnotation.shiftPoints(dx, dy);
+            currentAnnotation.shiftPoints(dx, dy,
+                    PdfHelper.getInstance().getPdfBitmap().getWidth(), PdfHelper.getInstance().getPdfBitmap().getHeight());
         }
     }
 
@@ -274,33 +283,40 @@ public class MusicView extends View {
             }
             if (PdfHelper.getInstance().getPdfBitmap(pageNo) != null) {
                 setPageNo(pageNo);
+                updateAnnotations();
                 invalidate();
             } else {
                 if (pageNo > 0) pageNo--;
             }
         }
         return true;
+    }
 
+    public void updateAnnotations() {
+        if (musicFile.getAnnotations() != null) {
+            for (MusicAnnotation annotation : musicFile.getAnnotations()) {
+                if (annotation.getPage() == pageNo) {
+                    annotation.convertPoints(PdfHelper.getInstance().getPdfBitmap().getWidth(),
+                            PdfHelper.getInstance().getPdfBitmap().getHeight());
+                    annotation.calcBoundingRect();
+                }
+            }
+        }
     }
 
     public void handleAnnotation(MotionEvent motionEvent) {
-        float[] pts = {
-                motionEvent.getX(), motionEvent.getY()
-        };
+        int x = (int)motionEvent.getX();
+        int y = (int)motionEvent.getY();
 
         if (annotationMode == MODE_ANNOTATE_FREEHAND) {
             if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                 addFreehandAnnotation(pageNo);
-                addAnnotationPoint(new Point((int) pts[0], (int) pts[1]));
+                addAnnotationPoint(new Point(x, y));
             } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
-                addAnnotationPoint(new Point((int) pts[0], (int) pts[1]));
+                addAnnotationPoint(new Point(x, y));
                 invalidate();
             } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
                 endAnnotation();
-                Gson gson = new GsonBuilder()
-                        .create();
-                String json = gson.toJson(musicFile);
-                Log.d(TAG, "JSON: " + json);
             }
         } else if (annotationMode == MODE_ANNOTATE_EDIT) {
             if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
