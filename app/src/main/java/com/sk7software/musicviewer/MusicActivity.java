@@ -152,6 +152,9 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 btnStopEdit.setVisibility(View.GONE);
                 musicView.setAnnotationMode(0);
                 animateMenu(true);
+                musicView.setSelectedAnnotationId(-1);
+                musicView.hideDeleteButton();
+                musicView.invalidate();
             }
         });
 
