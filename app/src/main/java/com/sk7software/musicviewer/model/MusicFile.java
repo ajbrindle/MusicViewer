@@ -1,8 +1,11 @@
 package com.sk7software.musicviewer.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MusicFile implements Serializable {
+    int id;
     String name;
     int delay;
     int endDelay;
@@ -10,6 +13,8 @@ public class MusicFile implements Serializable {
     int bottomPct;
     int lastPageStop;
     String displayName;
+    boolean annotationsFetched;
+    List<MusicAnnotation> annotations;
 
     public String getName() {
         return name;
@@ -55,6 +60,36 @@ public class MusicFile implements Serializable {
 
     public void setLastPageStop(int lastPageStop) { this.lastPageStop = lastPageStop; }
 
+    public int addAnnotation(MusicAnnotation annotation) {
+        if (annotations == null) {
+            annotations = new ArrayList<MusicAnnotation>();
+        }
+        int id = annotations.stream().mapToInt(MusicAnnotation::getId).max().orElse(0) + 1;
+        annotation.setId(id);
+        annotations.add(annotation);
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public boolean isAnnotationsFetched() {
+        return annotationsFetched;
+    }
+
+    public void setAnnotationsFetched(boolean annotationsFetched) {
+        this.annotationsFetched = annotationsFetched;
+    }
+
+    public List<MusicAnnotation> getAnnotations() {
+        return annotations;
+    }
+
     public String getDisplayName() {
         if (name == null) {
             return null;
@@ -66,5 +101,18 @@ public class MusicFile implements Serializable {
         }
 
         return name;
+    }
+
+    public MusicAnnotation findAnnotation(float x, float y, int pageNo) {
+        for (MusicAnnotation annotation : annotations) {
+            if (annotation.getPage() == pageNo && annotation.contains(x, y)) {
+                return annotation;
+            }
+        }
+        return null;
+    }
+
+    public void removeAnnotation(int id) {
+        annotations.removeIf(a -> a.getId() == id);
     }
 }

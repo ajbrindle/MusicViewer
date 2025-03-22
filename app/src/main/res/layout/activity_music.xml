@@ -6,10 +6,167 @@
     android:layout_height="match_parent"
     tools:context=".MusicActivity">
 
-    <ImageView
+    <com.sk7software.musicviewer.MusicView
         android:id="@+id/imgView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"/>
+    <Button
+        android:id="@+id/btnStopEdit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="5dp"
+        android:layout_marginRight="5dp"
+        android:text="Stop Editing"
+        android:visibility="gone"/>
+    <LinearLayout
+        android:id="@+id/propsMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/btnMenu"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/bars_solid"
+            android:visibility="invisible"/>
+        <Button
+            android:id="@+id/btnOK"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:layout_marginLeft="15dp"
+            android:text="OK"
+            android:visibility="invisible"/>
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:layout_marginLeft="15dp"
+            android:text="Cancel"
+            android:visibility="invisible"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/slideMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/propsMenu"
+        android:layout_marginTop="5dp"
+        android:layout_marginLeft="5dp"
+        android:background="#ddffffff"
+        android:padding="10dp"
+        android:visibility="invisible">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#000000"
+            android:textSize="8pt"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
+            android:text="Transparency"/>
+
+        <SeekBar
+            android:id="@+id/seekTransparency"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:max="230"
+            android:min="0"
+            android:progress="0"
+            android:text="Transparency"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="8pt"
+            android:textColor="#000000"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
+            android:text="Line Width"/>
+
+        <SeekBar
+            android:id="@+id/seekWidth"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:max="20"
+            android:min="1"
+            android:progress="2"
+            android:text="Width"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="8pt"
+            android:textColor="#000000"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
+            android:text="Text Size"/>
+
+        <SeekBar
+            android:id="@+id/seekTextSize"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:min="10"
+            android:progress="35"
+            android:text="Text Size"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#000000"
+            android:textSize="8pt"
+            android:paddingLeft="5dp"
+            android:paddingTop="5dp"
+            android:text="Colour"/>
+
+        <RadioGroup
+            android:id="@+id/radioColours"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginLeft="10dp"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/radioBlack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="10dp"
+                android:background="#FF000000"
+                android:checked="true"/>
+            <RadioButton
+                android:id="@+id/radioRed"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                android:padding="10dp"
+                android:background="#FFFF0000"/>
+            <RadioButton
+                android:id="@+id/radioBlue"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                android:padding="10dp"
+                android:background="#FF0000FF"/>
+            <RadioButton
+                android:id="@+id/radioGreen"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                android:padding="10dp"
+                android:background="#FF00FF00"/>
+        </RadioGroup>
+    </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

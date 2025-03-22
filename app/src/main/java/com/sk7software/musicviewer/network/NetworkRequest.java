@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import com.sk7software.musicviewer.ApplicationContextProvider;
 import com.sk7software.musicviewer.BuildConfig;
 import com.sk7software.musicviewer.R;
+import com.sk7software.musicviewer.model.MusicAnnotation;
 import com.sk7software.musicviewer.model.MusicFile;
 
 import org.json.JSONArray;
@@ -35,10 +36,11 @@ public class NetworkRequest {
 
     private static final String FILE_LIST_URL = "http://www.sk7software.co.uk/sheetmusic/musiclist.php?key=" + BuildConfig.API_KEY;
     private static final String FILE_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/musicupd.php?key=" + BuildConfig.API_KEY;
+    private static final String GET_ANNOTATIONS_URL = "http://www.sk7software.co.uk/sheetmusic/annotations.php";
     private static final String TAG = NetworkRequest.class.getSimpleName();
 
     public interface NetworkCallback {
-        public void onRequestCompleted(List<MusicFile> callbackData);
+        public void onRequestCompleted(Object callbackData);
 
         public void onError(Exception e);
     }
@@ -100,7 +102,6 @@ public class NetworkRequest {
             Gson gson = new GsonBuilder()
                     .create();
             String json = gson.toJson(file);
-            Log.d(TAG, "JSON: " + json);
             JSONObject jsonData = new JSONObject(json);
             JsonObjectRequest jsonRequest = new JsonObjectRequest
                     (Request.Method.POST, FILE_UPD_URL, jsonData,
@@ -124,4 +125,44 @@ public class NetworkRequest {
             Log.d(TAG, "Error updating music file: " + e.getMessage());
         }
     }
+
+    public static void fetchAnnotations(final Context context, final int id, final NetworkCallback callback) {
+        Log.d(TAG, "Fetching annotations for id " + id);
+        try {
+            JsonArrayRequest jsObjRequest = new JsonArrayRequest
+                    (Request.Method.GET, GET_ANNOTATIONS_URL + "?id=" + id,
+                            null,
+                            new Response.Listener<JSONArray>() {
+                                @Override
+                                public void onResponse(JSONArray response) {
+                                    List<MusicAnnotation> annotations = new ArrayList<>();
+
+                                    for (int i = 0; i < response.length(); i++) {
+                                        try {
+                                            MusicAnnotation annotation = MusicAnnotation.fromJson(response.getJSONObject(i));
+                                            if (!annotation.getPoints().isEmpty()) {
+                                                annotations.add(annotation);
+                                            }
+                                        } catch (JSONException e) {
+                                            Log.e(TAG, "Error getting JSON Object: " + e);
+                                        }
+                                    }
+                                    callback.onRequestCompleted(annotations);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.d(TAG, "Error => " + error.toString());
+                                    callback.onError(error);
+                                }
+                            }
+                    );
+            jsObjRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 1, 1));
+            getQueue(context).add(jsObjRequest);
+        } catch (Exception e) {
+            Log.d(TAG, "Error fetching music files: " + e.getMessage());
+        }
+    }
+
 }
