@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +15,7 @@ import android.widget.Button;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.res.ResourcesCompat;
 
 import com.sk7software.musicviewer.model.DisplayPoint;
 import com.sk7software.musicviewer.model.MusicAnnotation;
@@ -96,65 +98,13 @@ public class MusicView extends View {
     private void drawAnnotation(Canvas canvas, MusicAnnotation annotation) {
         switch (annotation.getType()) {
             case MusicAnnotation.FREEHAND:
-                drawFreehandAnnotation(canvas, annotation);
+                AnnotationRenderer.drawFreehandAnnotation(canvas, annotation);
                 break;
             case MusicAnnotation.TEXT:
-                drawTextAnnotation(canvas, annotation);
+                AnnotationRenderer.drawTextAnnotation(canvas, annotation);
                 break;
             case MusicAnnotation.FINGERING:
-                drawFingersAnnotation(canvas, annotation);
-        }
-    }
-    private void drawFreehandAnnotation(Canvas canvas, MusicAnnotation annotation) {
-        boolean first = true;
-        Point lastPoint = new Point();
-
-        Paint p = new Paint();
-        p.setColor(annotation.getColour());
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(annotation.getLineWidth());
-        p.setAlpha(annotation.getTransparency());
-
-        for (DisplayPoint pt : annotation.getPoints()) {
-            if (!first) {
-                canvas.drawLine(lastPoint.x, lastPoint.y, pt.x, pt.y, p);
-            }
-            lastPoint.x = pt.x;
-            lastPoint.y = pt.y;
-            first = false;
-        }
-        showSelectedAnnotation(canvas, annotation);
-    }
-
-    private void drawTextAnnotation(Canvas canvas, MusicAnnotation annotation) {
-        Paint p = new Paint();
-        p.setColor(annotation.getColour());
-        p.setStyle(Paint.Style.FILL_AND_STROKE);
-        p.setTextSize(annotation.getTextSize());
-        p.setAlpha(annotation.getTransparency());
-        canvas.drawText(annotation.getText(), annotation.getPoints().get(0).x, annotation.getPoints().get(0).y, p);
-        showSelectedAnnotation(canvas, annotation);
-    }
-
-    private void drawFingersAnnotation(Canvas canvas, MusicAnnotation annotation) {
-        Paint p = new Paint();
-        p.setColor(annotation.getColour());
-        p.setStyle(Paint.Style.FILL_AND_STROKE);
-        p.setTextSize(annotation.getTextSize());
-        p.setAlpha(annotation.getTransparency());
-        String[] fingers = annotation.getText().split(",");
-        int iStart = 0;
-        int iEnd = fingers.length;
-        int incr = 1;
-        if (annotation.getHand() == MusicAnnotation.RIGHT_HAND) {
-            iStart = fingers.length - 1;
-            iEnd = -1;
-            incr = -1;
-        }
-        int y = annotation.getPoints().get(0).y;
-        for (int i=iStart; i!=iEnd; i+=incr) {
-            canvas.drawText(fingers[i], annotation.getPoints().get(0).x, y, p);
-            y += (int)p.getTextSize();
+                AnnotationRenderer.drawFingersAnnotation(canvas, annotation);
         }
         showSelectedAnnotation(canvas, annotation);
     }
@@ -320,14 +270,14 @@ public class MusicView extends View {
             }
         } else if (annotationMode == MODE_ANNOTATE_EDIT) {
             if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                MusicAnnotation annotation = musicFile.findAnnotation(motionEvent.getX(), motionEvent.getY());
+                MusicAnnotation annotation = musicFile.findAnnotation(motionEvent.getX(), motionEvent.getY(), pageNo);
                 if (annotation != null) {
                     setSelectedAnnotationId(annotation.getId());
                     dragPoint = new Point((int) motionEvent.getX(), (int) motionEvent.getY());
                     btnDel = btnDel == null ? createDeleteButton() : btnDel;
                     btnDel.setVisibility(View.VISIBLE);
-                    btnDel.setX(annotation.getBoundingRect().left - 25);
-                    btnDel.setY(annotation.getBoundingRect().top - 25);
+                    btnDel.setX(annotation.getBoundingRect().left - 15);
+                    btnDel.setY(annotation.getBoundingRect().top - 15);
                 } else {
                     setSelectedAnnotationId(-1);
                     if (btnDel != null) {
@@ -361,7 +311,7 @@ public class MusicView extends View {
         btnDelete.setBackgroundColor(Color.RED);
         btnDelete.setTextColor(Color.WHITE);
         btnDelete.setText("X");
-        btnDelete.setTextSize(20);
+        btnDelete.setTextSize(15);
         btnDelete.setPadding(0, 0, 0, 0);
 
         btnDelete.setOnClickListener(new OnClickListener() {

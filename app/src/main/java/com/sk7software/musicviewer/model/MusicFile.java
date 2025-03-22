@@ -13,6 +13,7 @@ public class MusicFile implements Serializable {
     int bottomPct;
     int lastPageStop;
     String displayName;
+    boolean annotationsFetched;
     List<MusicAnnotation> annotations;
 
     public String getName() {
@@ -77,6 +78,14 @@ public class MusicFile implements Serializable {
         return this.id;
     }
 
+    public boolean isAnnotationsFetched() {
+        return annotationsFetched;
+    }
+
+    public void setAnnotationsFetched(boolean annotationsFetched) {
+        this.annotationsFetched = annotationsFetched;
+    }
+
     public List<MusicAnnotation> getAnnotations() {
         return annotations;
     }
@@ -94,9 +103,9 @@ public class MusicFile implements Serializable {
         return name;
     }
 
-    public MusicAnnotation findAnnotation(float x, float y) {
+    public MusicAnnotation findAnnotation(float x, float y, int pageNo) {
         for (MusicAnnotation annotation : annotations) {
-            if (annotation.contains(x, y)) {
+            if (annotation.getPage() == pageNo && annotation.contains(x, y)) {
                 return annotation;
             }
         }

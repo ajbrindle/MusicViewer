@@ -53,6 +53,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
     private TextView txtRate;
     private MusicFile selectedFile = null;
     private Button btnMenu;
+    private Button btnStopEdit;
     private LinearLayout slideMenu;
     private boolean changed = false;
     private Dialog progressDialog;
@@ -92,6 +93,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
         Button go = (Button)findViewById(R.id.go);
         Button slower = (Button)findViewById(R.id.slower);
         Button faster = (Button)findViewById(R.id.faster);
+        btnStopEdit = (Button)findViewById(R.id.btnStopEdit);
         txtRate = (TextView)findViewById(R.id.rate);
         txtRate.setText(String.valueOf(selectedFile.getDelay()));
         btnMenu = (Button)findViewById(R.id.btnMenu);
@@ -143,6 +145,16 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
             }
         });
 
+        btnStopEdit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                btnMenu.setVisibility(View.INVISIBLE);
+                btnStopEdit.setVisibility(View.GONE);
+                musicView.setAnnotationMode(0);
+                animateMenu(true);
+            }
+        });
+
         // Show progress dialog
         AlertDialog.Builder progressDialogBuilder;
         progressDialogBuilder = new AlertDialog.Builder(MusicActivity.this);
@@ -174,20 +186,23 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 // Ensure you call it only once :
                 rootView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-                NetworkRequest.fetchAnnotations(MusicActivity.this, selectedFile.getId(), new NetworkRequest.NetworkCallback() {
-                    @Override
-                    public void onRequestCompleted(Object callbackData) {
-                        List<MusicAnnotation> annotations = (List<MusicAnnotation>)callbackData;
-                        for (MusicAnnotation a : annotations) {
-                            selectedFile.addAnnotation(a);
+                if (!selectedFile.isAnnotationsFetched()) {
+                    NetworkRequest.fetchAnnotations(MusicActivity.this, selectedFile.getId(), new NetworkRequest.NetworkCallback() {
+                        @Override
+                        public void onRequestCompleted(Object callbackData) {
+                            selectedFile.setAnnotationsFetched(true);
+                            List<MusicAnnotation> annotations = (List<MusicAnnotation>) callbackData;
+                            for (MusicAnnotation a : annotations) {
+                                selectedFile.addAnnotation(a);
+                            }
                         }
-                    }
 
-                    @Override
-                    public void onError(Exception e) {
-                        Log.e(TAG, "Error: " + e);
-                    }
-                });
+                        @Override
+                        public void onError(Exception e) {
+                            Log.e(TAG, "Error: " + e);
+                        }
+                    });
+                }
                 Point dimensions = new Point(musicView.getWidth(), musicView.getHeight());
                 musicView.setMinimumHeight(dimensions.y);
                 PdfHelper.getInstance().initialise(selectedFile, dimensions, MusicActivity.this);
@@ -239,49 +254,34 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
                 settings.putExtra("file", selectedFile);
                 settingsResultLauncher.launch(settings);
                 return true;
-            case R.id.action_annotate:
-                // Change annotation mode
-                btnMenu.setVisibility(View.INVISIBLE);
-                musicView.setAnnotationMode(0);
-                animateMenu(true);
-                toggleEditColour(item, 0xFFFFFFFF);
-                return true;
             case R.id.action_annotate_freehand:
                 btnMenu.setVisibility(View.VISIBLE);
+                btnStopEdit.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FREEHAND);
-                toggleEditColour(item, 0xFFFF0000);
                 changed = true;
                 return true;
             case R.id.action_annotate_text:
                 btnMenu.setVisibility(View.VISIBLE);
-                toggleEditColour(item, 0xFFFF0000);
+                btnStopEdit.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_TEXT);
                 TextDialog cdd = new TextDialog(this);
                 cdd.show();
                 return true;
             case R.id.action_annotate_fingers:
                 btnMenu.setVisibility(View.VISIBLE);
+                btnStopEdit.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FINGERS);
-                toggleEditColour(item, 0xFFFF0000);
                 FingersDialog fdd = new FingersDialog(this);
                 fdd.show();
                 return true;
             case R.id.action_annotate_edit:
                 btnMenu.setVisibility(View.VISIBLE);
+                btnStopEdit.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_EDIT);
-                toggleEditColour(item, 0xFFFF0000);
                 changed = true;
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
-        }
-    }
-
-    private void toggleEditColour(MenuItem item, int filter) {
-        Drawable drawable = item.getIcon();
-        if(drawable != null) {
-            drawable.mutate();
-            drawable.setColorFilter(filter, PorterDuff.Mode.SRC_ATOP);
         }
     }
 

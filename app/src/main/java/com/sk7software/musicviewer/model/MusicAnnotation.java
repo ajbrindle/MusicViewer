@@ -151,7 +151,7 @@ public class MusicAnnotation implements Serializable {
                         y1 = p.y;
                     }
                 }
-                boundingRect.set(x0, y0, x1, y1);
+                boundingRect.set(x0-5, y0-5, x1+5, y1+5);
             } else if (type == TEXT) {
                 Paint p = new Paint();
                 Rect textBounds = new Rect();
