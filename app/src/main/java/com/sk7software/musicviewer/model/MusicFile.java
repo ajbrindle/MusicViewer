@@ -7,6 +7,8 @@ import java.util.List;
 public class MusicFile implements Serializable {
     int id;
     String name;
+    String title;
+    String artist;
     int delay;
     int endDelay;
     int topPct;
@@ -88,6 +90,22 @@ public class MusicFile implements Serializable {
 
     public List<MusicAnnotation> getAnnotations() {
         return annotations;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public void setArtist(String artist) {
+        this.artist = artist;
     }
 
     public String getDisplayName() {

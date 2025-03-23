@@ -5,6 +5,8 @@ plugins {
 Properties properties = new Properties()
 properties.load(project.rootProject.file('api.properties').newDataInputStream())
 def API_KEY = properties.getProperty("API_KEY")
+def GOOGLE_API_KEY = properties.getProperty("GOOGLE_API_KEY")
+def SEARCH_ENGINE_ID = properties.getProperty("SEARCH_ENGINE_ID")
 
 android {
     compileSdk 31
@@ -16,6 +18,8 @@ android {
         versionCode 1
         versionName "1.0"
         buildConfigField("String", "API_KEY", API_KEY)
+        buildConfigField("String", "GOOGLE_API_KEY", GOOGLE_API_KEY)
+        buildConfigField("String", "SEARCH_ENGINE_ID", SEARCH_ENGINE_ID)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
