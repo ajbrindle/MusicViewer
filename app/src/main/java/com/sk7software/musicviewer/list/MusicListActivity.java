@@ -33,6 +33,7 @@ public class MusicListActivity extends AppCompatActivity {
 
     private List<MusicFile> items;
     private List<String> listItems;
+    private List<String> shadowList;
     private ArrayAdapter<String> adapter;
     private AlertDialog.Builder progressDialogBuilder;
     private Dialog progressDialog;
@@ -46,13 +47,14 @@ public class MusicListActivity extends AppCompatActivity {
         ListView lv = (ListView) findViewById(R.id.musicList);
         items = new ArrayList<>();
         listItems = new ArrayList<>();
+        shadowList = new ArrayList<>();
 
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, android.R.id.text1, listItems);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent i = new Intent();
-                addMetaData(i, listItems.get(position));
+                addMetaData(i, shadowList.get(position));
                 setResult(Activity.RESULT_OK, i);
                 finish();
             }
@@ -86,7 +88,12 @@ public class MusicListActivity extends AppCompatActivity {
                 items.addAll(addLocalFiles());
 
                 for (MusicFile f : items) {
-                    listItems.add(f.getName());
+                    if (f.getArtist() != null && f.getTitle() != null) {
+                        listItems.add(f.getArtist() + " / " + f.getTitle());
+                    } else {
+                        listItems.add(f.getName());
+                    }
+                    shadowList.add(f.getName());
                 }
                 adapter.notifyDataSetChanged();
                 setProgress(false, "");

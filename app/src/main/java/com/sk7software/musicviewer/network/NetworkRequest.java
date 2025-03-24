@@ -201,7 +201,7 @@ public class NetworkRequest {
         Log.d(TAG, "Finding random image");
         try {
             JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                    (Request.Method.GET, IMAGE_URL + "&q=" + URLEncoder.encode(title + " " + artist, "UTF-8"),
+                    (Request.Method.GET, IMAGE_URL + "&q=" + URLEncoder.encode(title + " " + artist + " -sheet", "UTF-8"),
                             null,
                             new Response.Listener<JSONObject>() {
                                 @Override
