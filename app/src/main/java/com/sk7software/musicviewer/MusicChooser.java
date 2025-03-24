@@ -205,6 +205,7 @@ public class MusicChooser extends AppCompatActivity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
+                                    img.setVisibility(View.VISIBLE);
                                     img.setImageBitmap(bmp);
                                 }
                             });
@@ -217,6 +218,7 @@ public class MusicChooser extends AppCompatActivity {
 
             @Override
             public void onError(Exception e) {
+                img.setVisibility(View.INVISIBLE);
                 Log.e(TAG, "Unable to find image: " + e);
             }
         });

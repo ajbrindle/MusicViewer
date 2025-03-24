@@ -201,7 +201,11 @@ public class NetworkRequest {
         Log.d(TAG, "Finding random image");
         try {
             JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                    (Request.Method.GET, IMAGE_URL + "&q=" + URLEncoder.encode(title + " " + artist + " -sheet", "UTF-8"),
+                    (Request.Method.GET, IMAGE_URL +
+                            "&q=" + URLEncoder.encode(title + " " + artist, "UTF-8") +
+                            "&exactTerms=" + URLEncoder.encode(artist, "UTF-8") +
+                            "&excludeTerms=" + URLEncoder.encode("sheet music", "UTF-8") +
+                            "&filter=1&num=10",
                             null,
                             new Response.Listener<JSONObject>() {
                                 @Override
@@ -210,7 +214,8 @@ public class NetworkRequest {
                                         JSONArray items = response.getJSONArray("items");
                                         for (int i=0; i<10; i++) {
                                             int random = (int)(Math.random() * items.length());
-                                            if (items.getJSONObject(random).getString("mime").endsWith("jpeg")) {
+                                            String mimeType = items.getJSONObject(random).getString("mime");
+                                            if (mimeType.endsWith("jpeg") || mimeType.endsWith("jpg") || mimeType.endsWith("png")) {
                                                 callback.onRequestCompleted(items.getJSONObject(random).getString("link"));
                                                 return;
                                             }
