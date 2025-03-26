@@ -36,6 +36,7 @@ public class MusicView extends View {
     private boolean clearFirst;
     private Button btnDel;
     private boolean showOverlays = false;
+    private boolean allowDelete = false;
 
     public static final int MODE_ANNOTATE_FREEHAND = 2;
     public static final int MODE_ANNOTATE_TEXT = 3;
@@ -282,9 +283,11 @@ public class MusicView extends View {
                     setSelectedAnnotationId(annotation.getId());
                     dragPoint = new PointF(motionEvent.getX(), motionEvent.getY());
                     btnDel = btnDel == null ? createDeleteButton() : btnDel;
-                    btnDel.setVisibility(View.VISIBLE);
-                    btnDel.setX(annotation.getBoundingRect().left - 15);
-                    btnDel.setY(annotation.getBoundingRect().top - 15);
+                    if (allowDelete) {
+                        btnDel.setVisibility(View.VISIBLE);
+                        btnDel.setX(annotation.getBoundingRect().left - 15);
+                        btnDel.setY(annotation.getBoundingRect().top - 15);
+                    }
                 } else {
                     setSelectedAnnotationId(-1);
                     hideDeleteButton();
@@ -303,6 +306,10 @@ public class MusicView extends View {
         }
     }
 
+    public int getAnnotationMode() {
+        return annotationMode;
+    }
+
     public void setAnnotationMode(int annotationMode) {
         this.annotationMode = annotationMode;
         if (annotationMode == 0) {
@@ -316,7 +323,7 @@ public class MusicView extends View {
         btnDelete.setBackgroundColor(Color.RED);
         btnDelete.setTextColor(Color.WHITE);
         btnDelete.setText("X");
-        btnDelete.setTextSize(15);
+        btnDelete.setTextSize(12);
         btnDelete.setPadding(0, 0, 0, 0);
 
         btnDelete.setOnClickListener(new OnClickListener() {
@@ -334,5 +341,9 @@ public class MusicView extends View {
 
     public void setShowOverlays(boolean showOverlays) {
         this.showOverlays = showOverlays;
+    }
+
+    public void setAllowDelete(boolean allowDelete) {
+        this.allowDelete = allowDelete;
     }
 }

@@ -203,8 +203,7 @@ public class NetworkRequest {
             JsonObjectRequest jsObjRequest = new JsonObjectRequest
                     (Request.Method.GET, IMAGE_URL +
                             "&q=" + URLEncoder.encode(title + " " + artist, "UTF-8") +
-                            "&exactTerms=" + URLEncoder.encode(artist, "UTF-8") +
-                            "&excludeTerms=" + URLEncoder.encode("sheet music", "UTF-8") +
+                            "&excludeTerms=" + URLEncoder.encode("sheet", "UTF-8") +
                             "&filter=1&num=10",
                             null,
                             new Response.Listener<JSONObject>() {

@@ -54,6 +54,8 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
     private MusicFile selectedFile = null;
     private Button btnMenu;
     private Button btnStopEdit;
+    private Button btnAdd;
+    private int addMode = 0;
     private LinearLayout slideMenu;
     private boolean changed = false;
     private Dialog progressDialog;
@@ -94,6 +96,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
         Button slower = (Button)findViewById(R.id.slower);
         Button faster = (Button)findViewById(R.id.faster);
         btnStopEdit = (Button)findViewById(R.id.btnStopEdit);
+        btnAdd = (Button)findViewById(R.id.btnAdd);
         txtRate = (TextView)findViewById(R.id.rate);
         txtRate.setText(String.valueOf(selectedFile.getDelay()));
         btnMenu = (Button)findViewById(R.id.btnMenu);
@@ -150,11 +153,27 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
             public void onClick(View view) {
                 btnMenu.setVisibility(View.INVISIBLE);
                 btnStopEdit.setVisibility(View.GONE);
+                btnAdd.setVisibility(View.GONE);
                 musicView.setAnnotationMode(0);
                 animateMenu(true);
                 musicView.setSelectedAnnotationId(-1);
                 musicView.hideDeleteButton();
                 musicView.invalidate();
+            }
+        });
+
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (addMode == MusicView.MODE_ANNOTATE_TEXT) {
+                    musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_TEXT);
+                    TextDialog cdd = new TextDialog(MusicActivity.this);
+                    cdd.show();
+                } else if (addMode == MusicView.MODE_ANNOTATE_FINGERS) {
+                    musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FINGERS);
+                    FingersDialog fdd = new FingersDialog(MusicActivity.this);
+                    fdd.show();
+                }
             }
         });
 
@@ -260,27 +279,36 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
             case R.id.action_annotate_freehand:
                 btnMenu.setVisibility(View.VISIBLE);
                 btnStopEdit.setVisibility(View.VISIBLE);
+                btnAdd.setVisibility(View.INVISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FREEHAND);
+                addMode = MusicView.MODE_ANNOTATE_FREEHAND;
                 changed = true;
                 return true;
             case R.id.action_annotate_text:
                 btnMenu.setVisibility(View.VISIBLE);
                 btnStopEdit.setVisibility(View.VISIBLE);
+                btnAdd.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_TEXT);
+                addMode = MusicView.MODE_ANNOTATE_TEXT;
                 TextDialog cdd = new TextDialog(this);
                 cdd.show();
                 return true;
             case R.id.action_annotate_fingers:
                 btnMenu.setVisibility(View.VISIBLE);
                 btnStopEdit.setVisibility(View.VISIBLE);
+                btnAdd.setVisibility(View.VISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_FINGERS);
+                addMode = MusicView.MODE_ANNOTATE_FINGERS;
                 FingersDialog fdd = new FingersDialog(this);
                 fdd.show();
                 return true;
             case R.id.action_annotate_edit:
                 btnMenu.setVisibility(View.VISIBLE);
                 btnStopEdit.setVisibility(View.VISIBLE);
+                btnAdd.setVisibility(View.INVISIBLE);
                 musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_EDIT);
+                musicView.setAllowDelete(true);
+                addMode = MusicView.MODE_ANNOTATE_EDIT;
                 changed = true;
                 return true;
             default:
@@ -536,6 +564,7 @@ public class MusicActivity extends AppCompatActivity implements IUpdateable, IAn
         int annotationId = selectedFile.addAnnotation(annotation);
         musicView.setSelectedAnnotationId(annotationId);
         musicView.setAnnotationMode(MusicView.MODE_ANNOTATE_EDIT);
+        musicView.setAllowDelete(false);
         musicView.invalidate();
         changed = true;
     }
