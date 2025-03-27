@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
@@ -31,10 +32,11 @@ public class MusicView extends View {
     private int pageNo;
     private int annotationMode;
     private int selectedAnnotationId;
-    private Point dragPoint;
+    private PointF dragPoint;
     private boolean clearFirst;
     private Button btnDel;
     private boolean showOverlays = false;
+    private boolean allowDelete = false;
 
     public static final int MODE_ANNOTATE_FREEHAND = 2;
     public static final int MODE_ANNOTATE_TEXT = 3;
@@ -200,6 +202,12 @@ public class MusicView extends View {
         return this.selectedAnnotationId;
     }
 
+    public void hideDeleteButton() {
+        if (btnDel != null) {
+            btnDel.setVisibility(View.INVISIBLE);
+        }
+    }
+
     public void moveAnnotation(int dx, int dy) {
         if (currentAnnotation != null) {
             currentAnnotation.shiftPoints(dx, dy,
@@ -273,29 +281,33 @@ public class MusicView extends View {
                 MusicAnnotation annotation = musicFile.findAnnotation(motionEvent.getX(), motionEvent.getY(), pageNo);
                 if (annotation != null) {
                     setSelectedAnnotationId(annotation.getId());
-                    dragPoint = new Point((int) motionEvent.getX(), (int) motionEvent.getY());
+                    dragPoint = new PointF(motionEvent.getX(), motionEvent.getY());
                     btnDel = btnDel == null ? createDeleteButton() : btnDel;
-                    btnDel.setVisibility(View.VISIBLE);
-                    btnDel.setX(annotation.getBoundingRect().left - 15);
-                    btnDel.setY(annotation.getBoundingRect().top - 15);
+                    if (allowDelete) {
+                        btnDel.setVisibility(View.VISIBLE);
+                        btnDel.setX(annotation.getBoundingRect().left - 15);
+                        btnDel.setY(annotation.getBoundingRect().top - 15);
+                    }
                 } else {
                     setSelectedAnnotationId(-1);
-                    if (btnDel != null) {
-                        btnDel.setVisibility(View.INVISIBLE);
-                    }
+                    hideDeleteButton();
                 }
                 invalidate();
             } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
                 if (getSelectedAnnotationId() > 0) {
-                    moveAnnotation((int)(motionEvent.getX() - dragPoint.x), (int)(motionEvent.getY() - dragPoint.y));
-                    btnDel.setX(btnDel.getX() + (int)(motionEvent.getX() - dragPoint.x));
-                    btnDel.setY(btnDel.getY() + (int)(motionEvent.getY() - dragPoint.y));
-                    dragPoint.x = (int) motionEvent.getX();
-                    dragPoint.y = (int) motionEvent.getY();
+                    moveAnnotation(Math.round(motionEvent.getX() - dragPoint.x), Math.round(motionEvent.getY() - dragPoint.y));
+                    btnDel.setX(btnDel.getX() + Math.round(motionEvent.getX() - dragPoint.x));
+                    btnDel.setY(btnDel.getY() + Math.round(motionEvent.getY() - dragPoint.y));
+                    dragPoint.x = motionEvent.getX();
+                    dragPoint.y = motionEvent.getY();
                     invalidate();
                 }
             }
         }
+    }
+
+    public int getAnnotationMode() {
+        return annotationMode;
     }
 
     public void setAnnotationMode(int annotationMode) {
@@ -311,7 +323,7 @@ public class MusicView extends View {
         btnDelete.setBackgroundColor(Color.RED);
         btnDelete.setTextColor(Color.WHITE);
         btnDelete.setText("X");
-        btnDelete.setTextSize(15);
+        btnDelete.setTextSize(12);
         btnDelete.setPadding(0, 0, 0, 0);
 
         btnDelete.setOnClickListener(new OnClickListener() {
@@ -329,5 +341,9 @@ public class MusicView extends View {
 
     public void setShowOverlays(boolean showOverlays) {
         this.showOverlays = showOverlays;
+    }
+
+    public void setAllowDelete(boolean allowDelete) {
+        this.allowDelete = allowDelete;
     }
 }

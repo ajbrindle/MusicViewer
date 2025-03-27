@@ -124,10 +124,15 @@ public class PdfHelper {
         if (pageCount > pageNo) {
             Log.d(TAG, "Showing page: " + pageNo);
             PdfRenderer.Page page = renderer.openPage(pageNo);
-            // assume page is portrait
             float scaleY = (float)dimensions.y / (float)page.getHeight();
+            float scaleX = (float)dimensions.x / (float)page.getWidth();
+            int bitmapHeightY = dimensions.y;
             int bitmapWidthX = (int) ((float)page.getWidth() * scaleY);
-            pdfBitmap = Bitmap.createBitmap(bitmapWidthX, dimensions.y, Bitmap.Config.ARGB_4444);
+            if (bitmapWidthX > dimensions.x) {
+                bitmapWidthX = dimensions.x;
+                bitmapHeightY = (int) ((float)page.getHeight() * scaleX);
+            }
+            pdfBitmap = Bitmap.createBitmap(bitmapWidthX, bitmapHeightY, Bitmap.Config.ARGB_4444);
             page.render(pdfBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
             page.close();
             return pdfBitmap;

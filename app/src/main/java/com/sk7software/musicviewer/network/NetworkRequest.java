@@ -26,6 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +37,10 @@ public class NetworkRequest {
 
     private static final String FILE_LIST_URL = "http://www.sk7software.co.uk/sheetmusic/musiclist.php?key=" + BuildConfig.API_KEY;
     private static final String FILE_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/musicupd.php?key=" + BuildConfig.API_KEY;
+    private static final String FILE_INFO_UPD_URL = "http://www.sk7software.co.uk/sheetmusic/setdesc.php?key=" + BuildConfig.API_KEY;
     private static final String GET_ANNOTATIONS_URL = "http://www.sk7software.co.uk/sheetmusic/annotations.php";
+    private static final String IMAGE_URL = "https://www.googleapis.com/customsearch/v1?key=" + BuildConfig.GOOGLE_API_KEY + "&cx=" + BuildConfig.SEARCH_ENGINE_ID +
+            "&searchType=image&imgSize=xlarge";
     private static final String TAG = NetworkRequest.class.getSimpleName();
 
     public interface NetworkCallback {
@@ -126,6 +130,34 @@ public class NetworkRequest {
         }
     }
 
+    public static void updateFileInfo(final Context context, final int id, final String artist, final String title, final NetworkCallback callback) {
+        Log.d(TAG, "Updating file info");
+        try {
+            String json = "{\"id\":" + id + ",\"artist\":\"" + artist + "\",\"title\":\"" + title + "\"}";
+            JSONObject jsonData = new JSONObject(json);
+            JsonObjectRequest jsonRequest = new JsonObjectRequest
+                    (Request.Method.POST, FILE_INFO_UPD_URL, jsonData,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    callback.onRequestCompleted(null);
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.d(TAG, "Error => " + error.toString());
+                                    callback.onError(error);
+                                }
+                            }
+                    );
+            jsonRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 1, 1));
+            getQueue(context).add(jsonRequest);
+        } catch (Exception e) {
+            Log.d(TAG, "Error updating music file: " + e.getMessage());
+        }
+    }
+
     public static void fetchAnnotations(final Context context, final int id, final NetworkCallback callback) {
         Log.d(TAG, "Fetching annotations for id " + id);
         try {
@@ -162,6 +194,49 @@ public class NetworkRequest {
             getQueue(context).add(jsObjRequest);
         } catch (Exception e) {
             Log.d(TAG, "Error fetching music files: " + e.getMessage());
+        }
+    }
+
+    public static void findImage(final Context context, final String title, final String artist, final NetworkCallback callback) {
+        Log.d(TAG, "Finding random image");
+        try {
+            JsonObjectRequest jsObjRequest = new JsonObjectRequest
+                    (Request.Method.GET, IMAGE_URL +
+                            "&q=" + URLEncoder.encode(title + " " + artist, "UTF-8") +
+                            "&excludeTerms=" + URLEncoder.encode("sheet", "UTF-8") +
+                            "&filter=1&num=10",
+                            null,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    try {
+                                        JSONArray items = response.getJSONArray("items");
+                                        for (int i=0; i<10; i++) {
+                                            int random = (int)(Math.random() * items.length());
+                                            String mimeType = items.getJSONObject(random).getString("mime");
+                                            if (mimeType.endsWith("jpeg") || mimeType.endsWith("jpg") || mimeType.endsWith("png")) {
+                                                callback.onRequestCompleted(items.getJSONObject(random).getString("link"));
+                                                return;
+                                            }
+                                        }
+                                        callback.onError(new Exception("No JPEG image found"));
+                                    } catch (JSONException e) {
+                                        Log.d(TAG, "Error getting images: " + e.getMessage());
+                                    }
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.d(TAG, "Error => " + error.toString());
+                                    callback.onError(error);
+                                }
+                            }
+                    );
+            jsObjRequest.setRetryPolicy(new DefaultRetryPolicy(5000, 1, 1));
+            getQueue(context).add(jsObjRequest);
+        } catch (Exception e) {
+            Log.d(TAG, "Error fetching images: " + e.getMessage());
         }
     }
 

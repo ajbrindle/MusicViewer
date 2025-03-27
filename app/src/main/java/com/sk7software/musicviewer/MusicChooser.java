@@ -6,18 +6,28 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 import com.sk7software.musicviewer.list.MusicListActivity;
 import com.sk7software.musicviewer.model.MusicFile;
+import com.sk7software.musicviewer.network.NetworkRequest;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,6 +42,10 @@ public class MusicChooser extends AppCompatActivity {
     private SimpleAdapter musicListAdapter;
     private int selectedItem;
     private MusicFile selectedFile;
+    private EditText txtArtist;
+    private EditText txtTrack;
+    private String artistName;
+    private String trackName;
 
     private static final String TAG = MusicChooser.class.getSimpleName();
     private static final int AUDIO_PERMISSION = 1;
@@ -55,6 +69,13 @@ public class MusicChooser extends AppCompatActivity {
         musicMap.put("value", "Tap to change");
         musicMapList.add(musicMap);
 
+        txtArtist = (EditText)findViewById(R.id.txtArtist);
+        txtTrack = (EditText)findViewById(R.id.txtTrack);
+        txtArtist.setVisibility(View.INVISIBLE);
+        txtTrack.setVisibility(View.INVISIBLE);
+        artistName = txtArtist.getText().toString();
+        trackName = txtTrack.getText().toString();
+
         musicListAdapter = new SimpleAdapter(this, musicMapList, R.layout.list_item,
                 new String[]{"name", "value"}, new int[]{R.id.firstLine, R.id.secondLine});
 
@@ -70,6 +91,7 @@ public class MusicChooser extends AppCompatActivity {
         btnShow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                checkTags();
                 Intent i = new Intent(ApplicationContextProvider.getContext(), MusicActivity.class);
                 i.putExtra("file", selectedFile);
                 startActivity(i);
@@ -105,6 +127,11 @@ public class MusicChooser extends AppCompatActivity {
                     h = musicMapList.get(0);
                     h.put("name", selectedFile.getName());
                     musicListAdapter.notifyDataSetChanged();
+                    setImage();
+                    txtArtist.setText(selectedFile.getArtist());
+                    txtTrack.setText(selectedFile.getTitle());
+                    txtArtist.setVisibility(View.VISIBLE);
+                    txtTrack.setVisibility(View.VISIBLE);
                     Log.d(TAG, "Selected file: " + selectedFile.getName());
                 }
             }
@@ -128,5 +155,72 @@ public class MusicChooser extends AppCompatActivity {
                 }
                 return;
         }
+    }
+
+    private void checkTags() {
+        String newArtistName = txtArtist.getText().toString();
+        String newTrackName = txtTrack.getText().toString();
+
+        if (!newArtistName.equals(artistName) || !newTrackName.equals(trackName)) {
+            artistName = newArtistName;
+            trackName = newTrackName;
+            Log.d(TAG, "New artist: " + artistName + ", track: " + trackName);
+            NetworkRequest.updateFileInfo(MusicChooser.this, selectedFile.getId(), artistName, trackName, new NetworkRequest.NetworkCallback() {
+                @Override
+                public void onRequestCompleted(Object callbackData) {
+                    Log.d(TAG, "File info updated");
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Log.e(TAG, "Error updating file info: " + e);
+                }
+            });
+        }
+    }
+
+    private void setImage() {
+        final ImageView img = (ImageView)findViewById(R.id.musicArt);
+        if (selectedFile.getArtist() == null || selectedFile.getTitle() == null) {
+            img.setVisibility(View.INVISIBLE);
+            return;
+        }
+        img.setImageAlpha(85);
+        img.setVisibility(View.VISIBLE);
+        NetworkRequest.findImage(MusicChooser.this, selectedFile.getArtist(), selectedFile.getTitle(), new NetworkRequest.NetworkCallback() {
+            @Override
+            public void onRequestCompleted(Object callbackData) {
+                final String result = String.valueOf(callbackData);
+                Log.d(TAG, "Image URL: " + result);
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            URL url = new URL(result);
+                            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                            connection.setDoInput(true);
+                            connection.connect();
+                            InputStream input = connection.getInputStream();
+                            final Bitmap bmp = BitmapFactory.decodeStream(input);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    img.setVisibility(View.VISIBLE);
+                                    img.setImageBitmap(bmp);
+                                }
+                            });
+                        } catch (Exception e) {
+                            Log.d(TAG, "Error setting image: " + e);
+                        }
+                    }
+                }).start();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                img.setVisibility(View.INVISIBLE);
+                Log.e(TAG, "Unable to find image: " + e);
+            }
+        });
     }
 }
